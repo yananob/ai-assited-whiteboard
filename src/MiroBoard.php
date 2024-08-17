@@ -17,8 +17,7 @@ class MiroBoard
 
     public function readRecentItems(int $count = 5): array
     {
-        $response = $this->client->request(
-            'GET',
+        $response = $this->client->get(
             "https://api.miro.com/v2/boards/{$this->boardId}/items?limit=10&type=sticky_note",
             [
                 'headers' => [
