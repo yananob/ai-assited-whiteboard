@@ -13,8 +13,22 @@ class Gpt
         $this->logger = new Logger();
     }
 
-    function getComment(string $source): string
+    function getComment(string $text): string
     {
+        $payload = [
+            "model" => $this->model,
+            "messages" => [
+                [
+                    "role" => "system",
+                    "content" => "You are a helpful assistant.",
+                ],
+                [
+                    "role" => "user",
+                    "content" => $text . "へのメッセージをください。",
+                ],
+            ],
+        ];
+    
         $response = $this->client->post(
             "https://api.openai.com/v1/chat/completions",
             [
@@ -22,7 +36,7 @@ class Gpt
                     'Content-Type' => 'application/json',
                     'Authorization' => "Bearer {$this->secret}",
                 ],
-                'data' => $source,
+                'body' => json_encode($payload),
             ]
         );
 
