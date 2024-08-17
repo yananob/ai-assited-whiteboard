@@ -21,7 +21,7 @@ function main()
     $gpt = new Gpt($config->gpt->secret, $config->gpt->model);
 
     while (true) {
-        $miroItems = $miroBoard->readRecentItems(5);
+        $miroItems = $miroBoard->readRecentItems(3);
 
         foreach ($miroItems as $miroItem) {
             $logger->info("processing miroItem: {$miroItem->data->content}");

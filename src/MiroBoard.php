@@ -69,8 +69,9 @@ class MiroBoard
         $body = [
             "data" => [
                 "content" => $comment,
-                "shape" => "rectangle",
+                "shape" => "wedge_round_rectangle_callout",
             ],
+            "style" => ["borderColor" => "#1a1a1a", "borderOpacity" => "0.5", "fillOpacity" => "0.5"],
             "position" => [
                 "x" => $parentItem->position->x + 100,
                 "y" => $parentItem->position->y + 50,
