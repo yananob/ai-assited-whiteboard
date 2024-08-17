@@ -1,0 +1,10 @@
+{
+    "miro": {
+        "secret": "XXXXX",
+        "board_id": "XXXXX"
+    },
+    "gpt": {
+        "secret": "XXXXX",
+        "model": "gpt-4o"
+    }
+}
