@@ -15,15 +15,21 @@ class MiroBoard
         $this->logger = new Logger();
     }
 
+    private function __headers(): array
+    {
+        return [
+            'accept' => 'application/json',
+            'authorization' => "Bearer {$this->secret}",
+            'content-type' => 'application/json',
+        ];
+    }
+
     public function readRecentItems(int $count = 5): array
     {
         $response = $this->client->get(
             "https://api.miro.com/v2/boards/{$this->boardId}/items?limit=10&type=sticky_note",
             [
-                'headers' => [
-                    'accept' => 'application/json',
-                    'authorization' => "Bearer {$this->secret}",
-                ],
+                'headers' => $this->__headers(),
             ]
         );
 
@@ -49,5 +55,34 @@ class MiroBoard
             return 0;
         }
         return ($a["modifiedAt"] < $b["modifiedAt"]) ? -1 : 1;
+    }
+
+    public function putComment($parentItem, string $comment): void
+    {
+        $body = [
+            "data" => [
+                "content" => "COMMENT",
+                "shape" => "rectangle",
+            ],
+            "position" => [
+                "x" => 10,
+                "y" => 20,
+            ],
+            "parent" => [
+                "id" => "PARENT_ID",
+            ],
+        ];
+
+        $response = $this->client->post(
+            'https://api.miro.com/v2/boards/board_id/shapes',
+            [
+                'body' => json_encode($body),
+                'headers' => $this->__headers(),
+            ]
+        );
+
+        if ($response->getStatusCode() != 200) {
+            throw new \Exception("Request error: [{$response->getStatusCode()} {$response->getReasonPhrase()}");
+        }
     }
 }
