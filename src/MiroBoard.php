@@ -42,14 +42,14 @@ class MiroBoard
             throw new \Exception("Request error: [{$response->getStatusCode()} {$response->getReasonPhrase()}");
         }
         $data = json_decode((string)$response->getBody(), false)->data;
-        $this->logger->info("data 1");
-        $this->logger->info($data);
+        // $this->logger->info("data 1");
+        // $this->logger->info($data);
         usort($data, [MiroBoard::class, "__compareDate"]);
-        $this->logger->info("data 2");
-        $this->logger->info($data);
+        // $this->logger->info("data 2");
+        // $this->logger->info($data);
         $data = array_slice($data, 0, $count);
-        $this->logger->info("data 3");
-        $this->logger->info($data);
+        // $this->logger->info("data 3");
+        // $this->logger->info($data);
 
         return $data;
     }
@@ -66,27 +66,28 @@ class MiroBoard
     {
         $body = [
             "data" => [
-                "content" => "COMMENT",
+                "content" => $comment,
                 "shape" => "rectangle",
             ],
             "position" => [
-                "x" => 10,
-                "y" => 20,
+                "x" => $parentItem->position->x + 100,
+                "y" => $parentItem->position->y + 50,
             ],
-            "parent" => [
-                "id" => "PARENT_ID",
-            ],
+            // "parent" => [
+            //     "id" => $parentItem->id,
+            // ],
         ];
 
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/shapes';
         $response = $this->client->post(
-            'https://api.miro.com/v2/boards/board_id/shapes',
+            $url,
             [
                 'body' => json_encode($body),
                 'headers' => $this->__headers(),
             ]
         );
 
-        if ($response->getStatusCode() != 200) {
+        if ($response->getStatusCode() != 201) {
             throw new \Exception("Request error: [{$response->getStatusCode()} {$response->getReasonPhrase()}");
         }
     }

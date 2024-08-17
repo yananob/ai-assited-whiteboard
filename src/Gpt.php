@@ -24,7 +24,7 @@ class Gpt
                 ],
                 [
                     "role" => "user",
-                    "content" => $text . "へのメッセージをください。",
+                    "content" => $text . "へのメッセージを、30文字以内で下さい。",
                 ],
             ],
         ];
@@ -43,11 +43,11 @@ class Gpt
         if ($response->getStatusCode() != 200) {
             throw new \Exception("Request error: [{$response->getStatusCode()} {$response->getReasonPhrase()}");
         }
-        $data = $response->getBody();
-        $this->logger->info($data);
+        $data = json_decode((string)$response->getBody(), false);
+        // $this->logger->info($data);
 
-        $answer = $data["choices"][0]["message"]["content"];
-        $this->logger->info($answer);
+        $answer = $data->choices[0]->message->content;
+        // $this->logger->info($answer);
 
         return $answer;
     }
