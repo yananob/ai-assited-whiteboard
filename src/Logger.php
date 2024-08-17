@@ -5,11 +5,13 @@ namespace MyApp;
 class Logger
 {
 
-    function info(string|array $text): void
+    function info(string|array $message): void
     {
-        if (gettype($text) == "array") {
-            $text = implode(", ", $text);
+        if (is_null($message)) {
+            $message = "";
+        } else if (in_array(gettype($message), ["array", "object"])) {
+            $message = json_encode($message);
         }
-        echo $text . "\n";
+        echo $message . "\n";
     }
 }

@@ -9,7 +9,7 @@ class MiroBoard
     private \GuzzleHttp\Client $client;
     private Logger $logger;
 
-    public function __construct(private string $secret, private string $boardId)
+    public function __construct(private string $token, private string $boardId)
     {
         $this->client = new \GuzzleHttp\Client();
         $this->logger = new Logger();
@@ -19,27 +19,32 @@ class MiroBoard
     {
         return [
             'accept' => 'application/json',
-            'authorization' => "Bearer {$this->secret}",
+            'authorization' => "Bearer {$this->token}",
             'content-type' => 'application/json',
         ];
     }
 
     public function readRecentItems(int $count = 5): array
     {
+        $url = "https://api.miro.com/v2/boards/" . urlencode($this->boardId) . "/items?limit=10&type=sticky_note";
         $response = $this->client->get(
-            "https://api.miro.com/v2/boards/{$this->boardId}/items?limit=10&type=sticky_note",
+            $url,
             [
                 'headers' => $this->__headers(),
+                // 'headers' => [
+                //     'accept' => 'application/json',
+                //     'authorization' => "Bearer {$this->token}",
+                // ]
             ]
         );
 
         if ($response->getStatusCode() != 200) {
             throw new \Exception("Request error: [{$response->getStatusCode()} {$response->getReasonPhrase()}");
         }
-        $data = $response->getBody()["data"];
+        $data = json_decode((string)$response->getBody(), false)->data;
         $this->logger->info("data 1");
         $this->logger->info($data);
-        usort($data, '$this->__compareDate');
+        usort($data, [MiroBoard::class, "__compareDate"]);
         $this->logger->info("data 2");
         $this->logger->info($data);
         $data = array_slice($data, 0, $count);
@@ -51,10 +56,10 @@ class MiroBoard
 
     private function __compareDate($a, $b)
     {
-        if ($a["modifiedAt"] == $b["modifiedAt"]) {
+        if ($a->modifiedAt == $b->modifiedAt) {
             return 0;
         }
-        return ($a["modifiedAt"] < $b["modifiedAt"]) ? -1 : 1;
+        return ($a->modifiedAt < $b->modifiedAt) ? -1 : 1;
     }
 
     public function putComment($parentItem, string $comment): void
