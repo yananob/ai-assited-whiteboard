@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 require 'vendor/autoload.php';
 
 use MyApp\Logger;
@@ -25,7 +27,7 @@ function main()
             $logger->info("processing miroItem: {$miroItem->data->content}");
 
             $comment = $gpt->getComment($miroItem->data->content);
-            $logger->info("comment from gpt: {$comment}");
+            $logger->info("comment from gpt: {$comment}", 1);
 
             $miroBoard->putComment($miroItem, $comment);
         }

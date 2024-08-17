@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MyApp;
 
 class Gpt
@@ -24,7 +26,7 @@ class Gpt
                 ],
                 [
                     "role" => "user",
-                    "content" => $text . "へのメッセージを、30文字以内で下さい。",
+                    "content" => $text . "へのメッセージを、50文字以内で下さい。",
                 ],
             ],
         ];
