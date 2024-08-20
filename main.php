@@ -8,14 +8,17 @@ use MyApp\Logger;
 use MyApp\MiroBoard;
 use MyApp\Gpt;
 
+const COMMENT_NONE = "ない";
+
 function getCommentForSticker(Gpt $gpt, string $text): string
 {
+    $text = strip_tags($text);
     $message = <<<EOS
-文章「{$text}」を以下の基準で評価してください。
+文章『{$text}』を以下の基準で評価してください。
 ・具体的か
 ・誤解を生む表現でないか
 
-文章に問題がない場合は「ない」の2文字を、問題がある場合はフィードバックを30文字以内でください。
+文章に問題がない場合は「ない」の2文字を、問題がある場合はフィードバックを100文字以内でください。
 EOS;
     return $gpt->callChatApi("You are a helpful assistant.", $message);
 }
@@ -23,19 +26,15 @@ EOS;
 function getCommentForConnector(MiroBoard $miroBoard, Gpt $gpt, $miroConnector): string
 {
     $text = "「" . $miroBoard->getStickerText($miroConnector->startItem->id) . "」ことの" .
-        $miroConnector->captions[0]->content . "は" .
+        strip_tags($miroConnector->captions[0]->content) . "は" .
         "「" . $miroBoard->getStickerText($miroConnector->endItem->id) . "」である。";
     $message = <<<EOS
-文章「{$text}」を以下の基準で評価してください。
-【矢印元】と【矢印先】の関係を以下の基準で評価してください。
-・関係が【矢印テキスト】の通りになっているか。矛盾がないか
+文章『{$text}』を以下の基準で評価してください。
+・文章が表す関係が適切で、整合性が取れているか
 
-文章に問題がない場合は「ない」の2文字を、問題がある場合はフィードバックを30文字以内でください。
+文章に問題がない場合は「ない」の2文字を、問題がある場合はフィードバックを100文字以内でください。
 EOS;
-    return $gpt->callChatApi(
-        "You are a helpful assistant.",
-        $text . "へのメッセージを、50文字以内で下さい。"
-    );
+    return $gpt->callChatApi("You are a helpful assistant.", $message);
 }
 
 function main()
@@ -51,13 +50,17 @@ function main()
 
     while (true) {
         $miroBoard->refresh();
-
+        
+        // TODO: miro apiレスポンスのデータ構造に依存しすぎ
         foreach ($miroBoard->getRecentItems(3) as $miroItem) {
             $logger->info("Processing miroItem: {$miroItem->data->content}");
 
             $comment = getCommentForSticker($gpt, $miroItem->data->content);
             $logger->info("Comment from gpt: {$comment}", 1);
 
+            if ($comment === COMMENT_NONE) {
+                continue;
+            }
             $miroBoard->putCommentToSticker($miroItem, $comment);
         }
 
@@ -67,6 +70,9 @@ function main()
             $comment = getCommentForConnector($miroBoard, $gpt, $miroConnector);
             $logger->info("Comment from gpt: {$comment}", 1);
 
+            if ($comment === COMMENT_NONE) {
+                continue;
+            }
             $miroBoard->putCommentToConnector($miroConnector, $comment);
         }
 
