@@ -136,8 +136,8 @@ class MiroBoard
         $this->__putComment(
             $connector,
             $comment,
-            ($this->stickers[$connector->startItem->id]->position->x + $this->stickers[$connector->endItem->id]->position->x) / 2,
-            ($this->stickers[$connector->startItem->id]->position->y + $this->stickers[$connector->endItem->id]->position->y) / 2
+            ($this->stickers[$connector->startItem->id]->position->x + $this->stickers[$connector->endItem->id]->position->x) / 2 + 100,
+            ($this->stickers[$connector->startItem->id]->position->y + $this->stickers[$connector->endItem->id]->position->y) / 2 - 50
         );
     }
 }
