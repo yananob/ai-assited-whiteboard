@@ -8,9 +8,9 @@ class Utils
 {
     public static function checkResponse(
         \Psr\Http\Message\ResponseInterface $response,
-        array $allowedCode
+        array $allowedCodes
     ): void {
-        if (!in_array($response->getStatusCode(), $allowedCode, true)) {
+        if (!in_array($response->getStatusCode(), $allowedCodes, true)) {
             throw new \Exception("Request error: [{$response->getStatusCode()} {$response->getReasonPhrase()}");
         }
     }
