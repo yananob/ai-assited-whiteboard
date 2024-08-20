@@ -99,21 +99,19 @@ class MiroBoard
 
     public function getStickerText(string $id): string
     {
-        return $this->stickers[$id]->data->content;
+        return strip_tags($this->stickers[$id]->data->content);
     }
 
-    private function __putComment($targetItem, string $comment, int $x, int $y): void
+    private function __putComment($targetItem, string $comment, float $x, float $y): void
     {
         $body = [
             "data" => [
                 "content" => $comment,
                 "shape" => "wedge_round_rectangle_callout",
             ],
-            "style" => ["borderColor" => "#1a1a1a", "borderOpacity" => "1", "fillOpacity" => "1"],
-            "position" => [
-                "x" => $x,
-                "y" => $y,
-            ],
+            "style" => ["borderColor" => "#1a1a1a", "borderOpacity" => "0.7", "fillOpacity" => "0.7", "fillColor" => "#ffffff"],
+            "position" => ["x" => $x, "y" => $y],
+            "geometry" => ["height" => 100, "width" => 200],
         ];
 
         $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/shapes';
@@ -130,11 +128,16 @@ class MiroBoard
 
     public function putCommentToSticker($sticker, string $comment): void
     {
-        $this->__putComment($sticker, $comment, $sticker->position->x + 100, $sticker->position->y + 50);
+        $this->__putComment($sticker, $comment, $sticker->position->x + 100, $sticker->position->y - 50);
     }
 
     public function putCommentToConnector($connector, string $comment): void
     {
-        $this->__putComment($connector, $comment, $connector->position->x, $connector->position->y);
+        $this->__putComment(
+            $connector,
+            $comment,
+            ($this->stickers[$connector->startItem->id]->position->x + $this->stickers[$connector->endItem->id]->position->x) / 2,
+            ($this->stickers[$connector->startItem->id]->position->y + $this->stickers[$connector->endItem->id]->position->y) / 2
+        );
     }
 }

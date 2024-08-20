@@ -18,7 +18,7 @@ class Gpt
     public function callChatApi(string $context, string $message): string
     {
         $logger = new Logger();
-        $logger->info("Calling ChatApi: [{$context}] <{$message}>");
+        $logger->info("Calling ChatApi: [{$context}] <{$message}>", 1);
 
         $payload = [
             "model" => $this->model,
