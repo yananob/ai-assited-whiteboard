@@ -4,29 +4,32 @@ declare(strict_types=1);
 
 namespace MyApp;
 
+use MyApp\Utils;
+
 class Gpt
 {
     private \GuzzleHttp\Client $client;
-    private Logger $logger;
 
     public function __construct(private string $secret, private string $model)
     {
         $this->client = new \GuzzleHttp\Client();
-        $this->logger = new Logger();
     }
 
-    function getComment(string $text): string
+    public function callChatApi(string $context, string $message): string
     {
+        $logger = new Logger();
+        $logger->info("Calling ChatApi: [{$context}] <{$message}>");
+
         $payload = [
             "model" => $this->model,
             "messages" => [
                 [
                     "role" => "system",
-                    "content" => "You are a helpful assistant.",
+                    "content" => $context,
                 ],
                 [
                     "role" => "user",
-                    "content" => $text . "へのメッセージを、50文字以内で下さい。",
+                    "content" => $message,
                 ],
             ],
         ];
@@ -42,15 +45,11 @@ class Gpt
             ]
         );
 
-        if ($response->getStatusCode() != 200) {
-            throw new \Exception("Request error: [{$response->getStatusCode()} {$response->getReasonPhrase()}");
-        }
+        Utils::checkResponse($response, [200]);
         $data = json_decode((string)$response->getBody(), false);
-        // $this->logger->info($data);
-
         $answer = $data->choices[0]->message->content;
-        // $this->logger->info($answer);
 
         return $answer;
     }
+
 }
