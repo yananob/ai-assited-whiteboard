@@ -23,7 +23,7 @@ class MiroBoard
     public function __construct(private string $token, private string $boardId)
     {
         $this->client = new \GuzzleHttp\Client();
-        $this->logger = new Logger();
+        $this->logger = new Logger(Logger::DEBUG);
     }
 
     private function __headers(): array
@@ -103,7 +103,7 @@ class MiroBoard
             $miroComment = new MiroComment($data);
             $stickerId = MiroComment::extractStickerId($miroComment->getText());
             $miroComment->setSticker($this->stickers[$stickerId]);
-            // var_dump($miroComment);
+            // $this->logger->debug($miroComment);
             $result[$data->id] = $miroComment;
         }
         return $result;

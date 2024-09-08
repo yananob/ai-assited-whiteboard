@@ -5,9 +5,8 @@ declare(strict_types=1);
 require 'vendor/autoload.php';
 
 use MyApp\Logger;
-use MyApp\MiroBoard;
 use MyApp\Gpt;
-use MyApp\MiroComment;
+use MyApp\MiroBoard;
 
 const COMMENT_NONE = "ない";
 

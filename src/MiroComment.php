@@ -9,48 +9,22 @@ namespace MyApp;
  */
 class MiroComment
 {
-    // private int $id;
-    // private $miroItem;
     private $sticker;
     private string $text;
     private string $shapeText;
 
     public function __construct(private $miroItem)
     {
-        // $miroComment = new MiroComment($miroItem->data->content);
-        // $miroComment->miroItem = $miroItem;
-        // $miroComment->id = $miroItem->id;
         $this->text = $miroItem->data->content;
     }
 
-    // public static function createFromText(string $text): MiroComment
-    // {
-    //     return new MiroComment($text);
-    // }
-
-    // public static function createFromShape($miroItem): MiroComment
-    // {
-    //     $miroComment = new MiroComment($miroItem->data->content);
-    //     $miroComment->miroItem = $miroItem;
-    //     // $miroComment->id = $miroItem->id;
-    //     $miroComment->shapeText = $miroItem->data->content;
-    //     return $miroComment;
-    // }
-
     public function getStickerId(): string
     {
-        // if (empty($this->sticker)) {
-        //     return $this->__extractStickerId($this->getShapeText());
-        // } else {
         return $this->sticker->id;
-        // }
     }
 
     public function isStickerModified(): bool
     {
-        // if (empty($this->miroItem)) {
-        //     return false;
-        // }
         return $this->sticker->modifiedAt > $this->miroItem->createdAt;
     }
 
