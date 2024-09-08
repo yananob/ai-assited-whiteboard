@@ -7,6 +7,7 @@ require 'vendor/autoload.php';
 use MyApp\Logger;
 use MyApp\MiroBoard;
 use MyApp\Gpt;
+use MyApp\AiComment;
 
 const COMMENT_NONE = "ない";
 
@@ -23,19 +24,19 @@ EOS;
     return $gpt->callChatApi("You are a helpful assistant.", $message);
 }
 
-function getCommentForConnector(MiroBoard $miroBoard, Gpt $gpt, $miroConnector): string
-{
-    $text = "「" . $miroBoard->getStickerText($miroConnector->startItem->id) . "」ことの" .
-        strip_tags($miroConnector->captions[0]->content) . "は" .
-        "「" . $miroBoard->getStickerText($miroConnector->endItem->id) . "」である。";
-    $message = <<<EOS
-文章『{$text}』を以下の基準で評価してください。
-・文章が表す関係が適切で、整合性が取れているか
+// function getCommentForConnector(MiroBoard $miroBoard, Gpt $gpt, $miroConnector): string
+// {
+//     $text = "「" . $miroBoard->getStickerText($miroConnector->startItem->id) . "」ことの" .
+//         strip_tags($miroConnector->captions[0]->content) . "は" .
+//         "「" . $miroBoard->getStickerText($miroConnector->endItem->id) . "」である。";
+//     $message = <<<EOS
+// 文章『{$text}』を以下の基準で評価してください。
+// ・文章が表す関係が適切で、整合性が取れているか
 
-文章に問題がない場合は「ない」の2文字を、問題がある場合はフィードバックを100文字以内でください。
-EOS;
-    return $gpt->callChatApi("You are a helpful assistant.", $message);
-}
+// 文章に問題がない場合は「ない」の2文字を、問題がある場合はフィードバックを100文字以内でください。
+// EOS;
+//     return $gpt->callChatApi("You are a helpful assistant.", $message);
+// }
 
 function main()
 {
@@ -50,31 +51,40 @@ function main()
 
     while (true) {
         $miroBoard->refresh();
-        
+
+        $miroBoard->clearCommentsForModifiedStickers();
+        // $miroBoard->clearCommentsForUpdatedStickers();
+
         // TODO: miro apiレスポンスのデータ構造に依存しすぎ
-        foreach ($miroBoard->getRecentItems(3) as $miroItem) {
+        foreach ($miroBoard->getRecentItems(2) as $miroItem) {
             $logger->info("Processing miroItem: {$miroItem->data->content}");
 
-            $comment = getCommentForSticker($gpt, $miroItem->data->content);
-            $logger->info("Comment from gpt: {$comment}", 1);
-
-            if ($comment === COMMENT_NONE) {
+            if ($miroBoard->hasAiComment($miroItem)) {
+                $logger->info("aiComment exists, skipping", 1);
                 continue;
             }
-            $miroBoard->putCommentToSticker($miroItem, $comment);
-        }
 
-        foreach ($miroBoard->getRecentConnectors(3) as $miroConnector) {
-            $logger->info("Processing miroConnector: {$miroConnector->captions[0]->content}");
+            $aiComment = AiComment::createFromText(getCommentForSticker($gpt, $miroItem->data->content));
+            $aiComment->setSticker($miroItem);
+            $logger->info("Comment from gpt: {$aiComment->getText()}", 1);
 
-            $comment = getCommentForConnector($miroBoard, $gpt, $miroConnector);
-            $logger->info("Comment from gpt: {$comment}", 1);
-
-            if ($comment === COMMENT_NONE) {
+            if ($aiComment->getText() === COMMENT_NONE) {
                 continue;
             }
-            $miroBoard->putCommentToConnector($miroConnector, $comment);
+            $miroBoard->putCommentToSticker($miroItem, $aiComment);
         }
+
+        // foreach ($miroBoard->getRecentConnectors(2) as $miroConnector) {
+        //     $logger->info("Processing miroConnector: {$miroConnector->captions[0]->content}");
+
+        //     $comment = getCommentForConnector($miroBoard, $gpt, $miroConnector);
+        //     $logger->info("Comment from gpt: {$comment}", 1);
+
+        //     if ($comment === COMMENT_NONE) {
+        //         continue;
+        //     }
+        //     $miroBoard->putCommentToConnector($miroConnector, $comment);
+        // }
 
         // $logger->info("Sleeping");
         // sleep(10);
