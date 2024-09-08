@@ -159,8 +159,6 @@ class MiroBoard
 
     public function putCommentToSticker($sticker, string $comment): void
     {
-        // $comment = $this->__bindToSticker($sticker, $comment);
-        // $miroComment->bindToSticker($sticker);
         $comment = MiroComment::bindStickerId($comment, $sticker->id);
         $data = $this->__putComment($sticker, $comment, $sticker->position->x + 100, $sticker->position->y - 50);
         $miroComment = new MiroComment($data);

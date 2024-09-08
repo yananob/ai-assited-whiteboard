@@ -37,6 +37,7 @@ EOS;
 //     return $gpt->callChatApi("You are a helpful assistant.", $message);
 // }
 
+
 function main()
 {
     $logger = new Logger();
@@ -48,7 +49,8 @@ function main()
     $miroBoard = new MiroBoard($config->miro->token, $config->miro->board_id);
     $gpt = new Gpt($config->gpt->secret, $config->gpt->model);
 
-    while (true) {
+    $max_loop = 5;
+    while ($max_loop-- > 0) {
         $miroBoard->refresh();
 
         $miroBoard->clearAiCommentsForModifiedStickers();
@@ -84,9 +86,9 @@ function main()
         //     $miroBoard->putCommentToConnector($miroConnector, $comment);
         // }
 
+        break;      // DEBUB
         // $logger->info("Sleeping");
         // sleep(10);
-        break;  // DEBUG
     }
 }
 
