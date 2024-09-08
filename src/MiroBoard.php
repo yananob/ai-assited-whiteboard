@@ -124,7 +124,7 @@ class MiroBoard
         if ($a->modifiedAt == $b->modifiedAt) {
             return 0;
         }
-        return ($a->modifiedAt > $b->modifiedAt) ? -1 : 1;
+        return ($a->modifiedAt > $b->modifiedAt) ? -1 : 1;      // MEMO: 更新日時の降順
     }
 
     public function getStickerText(string $id): string
@@ -139,7 +139,7 @@ class MiroBoard
                 'content' => $comment,
                 'shape' => self::SHAPE_AICOMMENT,
             ],
-            'style' => ['borderColor' => '#1a1a1a', 'borderOpacity' => '0.7', 'fillOpacity' => '0.7', 'fillColor' => '#ffffff'],
+            'style' => ['borderColor' => '#1a1a1a', 'borderOpacity' => '0.7', 'fillOpacity' => '0.7', 'fillColor' => '#ffffff', 'fontSize' => 12],
             'position' => ['x' => $x, 'y' => $y],
             'geometry' => ['height' => 150, 'width' => 250],
         ];
@@ -160,7 +160,7 @@ class MiroBoard
     public function putCommentToSticker($sticker, string $comment): void
     {
         $comment = MiroComment::bindStickerId($comment, $sticker->id);
-        $data = $this->__putComment($sticker, $comment, $sticker->position->x + 100, $sticker->position->y - 50);
+        $data = $this->__putComment($sticker, $comment, $sticker->position->x + 110, $sticker->position->y - 80);
         $miroComment = new MiroComment($data);
         $miroComment->setSticker($sticker);
     }
@@ -176,6 +176,18 @@ class MiroBoard
     //     );
     // }
 
+    private function __deleteShape(string $shapeId): void
+    {
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/shapes/' . $shapeId;
+        $response = $this->client->delete(
+            $url,
+            [
+                'headers' => $this->__headers(),
+            ]
+        );
+        Utils::checkResponse($response, [204]);
+    }
+
     public function clearAiCommentsForModifiedStickers(): void
     {
         foreach ($this->aiComments as $miroComment) {
@@ -187,18 +199,6 @@ class MiroBoard
                 unset($this->aiComments[$miroComment->getMiroId()]);
             }
         }
-    }
-
-    private function __deleteShape(string $shapeId): void
-    {
-        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/shapes/' . $shapeId;
-        $response = $this->client->delete(
-            $url,
-            [
-                'headers' => $this->__headers(),
-            ]
-        );
-        Utils::checkResponse($response, [204]);
     }
 
     public function hasAiComment($sticker): bool
