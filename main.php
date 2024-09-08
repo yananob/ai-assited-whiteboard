@@ -7,7 +7,7 @@ require 'vendor/autoload.php';
 use MyApp\Logger;
 use MyApp\MiroBoard;
 use MyApp\Gpt;
-use MyApp\AiComment;
+use MyApp\MiroComment;
 
 const COMMENT_NONE = "ない";
 
@@ -52,7 +52,7 @@ function main()
     while (true) {
         $miroBoard->refresh();
 
-        $miroBoard->clearCommentsForModifiedStickers();
+        $miroBoard->clearAiCommentsForModifiedStickers();
         // $miroBoard->clearCommentsForUpdatedStickers();
 
         // TODO: miro apiレスポンスのデータ構造に依存しすぎ
@@ -60,18 +60,17 @@ function main()
             $logger->info("Processing miroItem: {$miroItem->data->content}");
 
             if ($miroBoard->hasAiComment($miroItem)) {
-                $logger->info("aiComment exists, skipping", 1);
+                $logger->info("MiroComment exists, skipping", 1);
                 continue;
             }
 
-            $aiComment = AiComment::createFromText(getCommentForSticker($gpt, $miroItem->data->content));
-            $aiComment->setSticker($miroItem);
-            $logger->info("Comment from gpt: {$aiComment->getText()}", 1);
+            $comment = getCommentForSticker($gpt, $miroItem->data->content);
+            $logger->info("Comment from gpt: {$comment}", 1);
 
-            if ($aiComment->getText() === COMMENT_NONE) {
+            if ($comment === COMMENT_NONE) {
                 continue;
             }
-            $miroBoard->putCommentToSticker($miroItem, $aiComment);
+            $miroBoard->putCommentToSticker($miroItem, $comment);
         }
 
         // foreach ($miroBoard->getRecentConnectors(2) as $miroConnector) {

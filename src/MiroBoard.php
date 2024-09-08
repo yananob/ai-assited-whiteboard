@@ -5,18 +5,25 @@ declare(strict_types=1);
 namespace MyApp;
 
 use MyApp\Utils;
-use MyApp\AiComment;
+use MyApp\MiroComment;
 
+/**
+ * Miroボードレベルクラス
+ */
 class MiroBoard
 {
     private \GuzzleHttp\Client $client;
     private array $stickers;
     private array $connectors;
     private array $aiComments;
+    private Logger $logger;
+
+    const SHAPE_AICOMMENT = "wedge_round_rectangle_callout";
 
     public function __construct(private string $token, private string $boardId)
     {
         $this->client = new \GuzzleHttp\Client();
+        $this->logger = new Logger();
     }
 
     private function __headers(): array
@@ -87,16 +94,17 @@ class MiroBoard
 
         $result = [];
         foreach (json_decode((string)$response->getBody(), false)->data as $data) {
-            if (isset($data->data->shape) && !in_array($data->data->shape, ['wedge_round_rectangle_callout'])) {
+            if (isset($data->data->shape) && !in_array($data->data->shape, [self::SHAPE_AICOMMENT])) {
                 // echo "[DEBUG] skipping " . $data->type . "\n";
                 continue;
             }
             // echo str_repeat("-", 80) . "\n";
             // var_dump($data);
-            $aiComment = AiComment::createFromShape($data);
-            $aiComment->setSticker($this->stickers[$aiComment->getStickerId()]);
-            // var_dump($aiComment);
-            $result[$data->id] = $aiComment;
+            $miroComment = new MiroComment($data);
+            $stickerId = MiroComment::extractStickerId($miroComment->getText());
+            $miroComment->setSticker($this->stickers[$stickerId]);
+            // var_dump($miroComment);
+            $result[$data->id] = $miroComment;
         }
         return $result;
     }
@@ -128,12 +136,12 @@ class MiroBoard
         return strip_tags($this->stickers[$id]->data->content);
     }
 
-    private function __putComment($targetItem, string $comment, float $x, float $y): void
+    private function __putComment($targetItem, string $comment, float $x, float $y): object
     {
         $body = [
             "data" => [
                 "content" => $comment,
-                "shape" => "wedge_round_rectangle_callout",
+                "shape" => self::SHAPE_AICOMMENT,
             ],
             "style" => ["borderColor" => "#1a1a1a", "borderOpacity" => "0.7", "fillOpacity" => "0.7", "fillColor" => "#ffffff"],
             "position" => ["x" => $x, "y" => $y],
@@ -150,13 +158,16 @@ class MiroBoard
         );
 
         Utils::checkResponse($response, [201]);
+        return json_decode((string)$response->getBody(), false);
     }
 
-    public function putCommentToSticker($sticker, AiComment $aiComment): void
+    public function putCommentToSticker($sticker, string $comment): void
     {
         // $comment = $this->__bindToSticker($sticker, $comment);
-        // $aiComment->bindToSticker($sticker);
-        $this->__putComment($sticker, $aiComment->getShapeText(), $sticker->position->x + 100, $sticker->position->y - 50);
+        // $miroComment->bindToSticker($sticker);
+        $data = $this->__putComment($sticker, $comment, $sticker->position->x + 100, $sticker->position->y - 50);
+        $miroComment = new MiroComment($data);
+        $miroComment->setSticker($sticker);
     }
 
     // public function putCommentToConnector($connector, string $comment): void
@@ -164,7 +175,7 @@ class MiroBoard
     //     $comment = $this->__bindToConnector($connector, $comment);
     //     $this->__putComment(
     //         $connector,
-    //         $aiComment->comment,
+    //         $miroComment->comment,
     //         ($this->stickers[$connector->startItem->id]->position->x + $this->stickers[$connector->endItem->id]->position->x) / 2 + 100,
     //         ($this->stickers[$connector->startItem->id]->position->y + $this->stickers[$connector->endItem->id]->position->y) / 2 - 50
     //     );
@@ -180,18 +191,15 @@ class MiroBoard
     //     return $comment . "\n[" . $connector->id . "]";
     // }
 
-    public function clearCommentsForModifiedStickers(): void
+    public function clearAiCommentsForModifiedStickers(): void
     {
-        $logger = new Logger();
-        foreach ($this->aiComments as $aiComment) {
-            $logger->info("checking modified for " . $aiComment->getText());
-            // var_dump($aiComment);
-            if ($aiComment->isStickerModified()) {
-                $this->__deleteShape($aiComment->getMiroId());
-
-                $logger->info("deleting old comment: " . $aiComment->getMiroId());
-
-                unset($this->aiComments[$aiComment->getMiroId()]);
+        foreach ($this->aiComments as $miroComment) {
+            $this->logger->debug("checking modified for " . $miroComment->getText());
+            // var_dump($miroComment);
+            if ($miroComment->isStickerModified()) {
+                $this->logger->debug("deleting old comment: " . $miroComment->getMiroId());
+                $this->__deleteShape($miroComment->getMiroId());
+                unset($this->aiComments[$miroComment->getMiroId()]);
             }
         }
     }
@@ -210,8 +218,8 @@ class MiroBoard
 
     public function hasAiComment($sticker): bool
     {
-        foreach ($this->aiComments as $aiComment) {
-            if ($sticker->id === $aiComment->getStickerId()) {
+        foreach ($this->aiComments as $miroComment) {
+            if ($sticker->id === $miroComment->getStickerId()) {
                 return true;
             }
         }

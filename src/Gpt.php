@@ -6,6 +6,9 @@ namespace MyApp;
 
 use MyApp\Utils;
 
+/**
+ * GPT処理ラッパー
+ */
 class Gpt
 {
     private \GuzzleHttp\Client $client;
