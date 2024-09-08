@@ -18,7 +18,7 @@ class MiroBoard
     private array $aiComments;
     private Logger $logger;
 
-    const SHAPE_AICOMMENT = "wedge_round_rectangle_callout";
+    const SHAPE_AICOMMENT = 'wedge_round_rectangle_callout';
 
     public function __construct(private string $token, private string $boardId)
     {
@@ -45,7 +45,7 @@ class MiroBoard
     private function __loadStickers(): array
     {
         // TODO: 10件だけでなく、全件対象に
-        $url = "https://api.miro.com/v2/boards/" . urlencode($this->boardId) . "/items?limit=10&type=sticky_note";
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/items?limit=10&type=sticky_note';
         $response = $this->client->get(
             $url,
             [
@@ -64,7 +64,7 @@ class MiroBoard
     private function __loadConnectors(): array
     {
         // TODO: 10件だけでなく、全件対象に
-        $url = "https://api.miro.com/v2/boards/" . urlencode($this->boardId) . "/connectors?limit=10";
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/connectors?limit=10';
         $response = $this->client->get(
             $url,
             [
@@ -83,7 +83,7 @@ class MiroBoard
     private function __loadAiComments(): array
     {
         // TODO: 10件だけでなく、全件対象に
-        $url = "https://api.miro.com/v2/boards/" . urlencode($this->boardId) . "/items?limit=10&type=shape";
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/items?limit=10&type=shape';
         $response = $this->client->get(
             $url,
             [
@@ -95,15 +95,11 @@ class MiroBoard
         $result = [];
         foreach (json_decode((string)$response->getBody(), false)->data as $data) {
             if (isset($data->data->shape) && !in_array($data->data->shape, [self::SHAPE_AICOMMENT])) {
-                // echo "[DEBUG] skipping " . $data->type . "\n";
                 continue;
             }
-            // echo str_repeat("-", 80) . "\n";
-            // var_dump($data);
             $miroComment = new MiroComment($data);
             $stickerId = MiroComment::extractStickerId($miroComment->getText());
             $miroComment->setSticker($this->stickers[$stickerId]);
-            // $this->logger->debug($miroComment);
             $result[$data->id] = $miroComment;
         }
         return $result;
@@ -112,14 +108,14 @@ class MiroBoard
     public function getRecentItems(int $count = 5): array
     {
         $data = $this->stickers;
-        usort($data, [MiroBoard::class, "__compareDate"]);
+        usort($data, [MiroBoard::class, '__compareDate']);
         return array_slice($data, 0, $count);
     }
 
     public function getRecentConnectors(int $count = 5): array
     {
         $data = $this->connectors;
-        usort($data, [MiroBoard::class, "__compareDate"]);
+        usort($data, [MiroBoard::class, '__compareDate']);
         return array_slice($data, 0, $count);
     }
 
@@ -139,13 +135,13 @@ class MiroBoard
     private function __putComment($targetItem, string $comment, float $x, float $y): object
     {
         $body = [
-            "data" => [
-                "content" => $comment,
-                "shape" => self::SHAPE_AICOMMENT,
+            'data' => [
+                'content' => $comment,
+                'shape' => self::SHAPE_AICOMMENT,
             ],
-            "style" => ["borderColor" => "#1a1a1a", "borderOpacity" => "0.7", "fillOpacity" => "0.7", "fillColor" => "#ffffff"],
-            "position" => ["x" => $x, "y" => $y],
-            "geometry" => ["height" => 100, "width" => 200],
+            'style' => ['borderColor' => '#1a1a1a', 'borderOpacity' => '0.7', 'fillOpacity' => '0.7', 'fillColor' => '#ffffff'],
+            'position' => ['x' => $x, 'y' => $y],
+            'geometry' => ['height' => 150, 'width' => 250],
         ];
 
         $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/shapes';
@@ -165,6 +161,7 @@ class MiroBoard
     {
         // $comment = $this->__bindToSticker($sticker, $comment);
         // $miroComment->bindToSticker($sticker);
+        $comment = MiroComment::bindStickerId($comment, $sticker->id);
         $data = $this->__putComment($sticker, $comment, $sticker->position->x + 100, $sticker->position->y - 50);
         $miroComment = new MiroComment($data);
         $miroComment->setSticker($sticker);
@@ -181,23 +178,13 @@ class MiroBoard
     //     );
     // }
 
-    // private function __bindToSticker($sticker, string $comment): string
-    // {
-    //     return $comment . "\n[" . $sticker->id . "]";
-    // }
-
-    // private function __bindToConnector($connector, string $comment): string
-    // {
-    //     return $comment . "\n[" . $connector->id . "]";
-    // }
-
     public function clearAiCommentsForModifiedStickers(): void
     {
         foreach ($this->aiComments as $miroComment) {
-            $this->logger->debug("checking modified for " . $miroComment->getText());
+            $this->logger->debug('checking modified for ' . $miroComment->getText());
             // var_dump($miroComment);
             if ($miroComment->isStickerModified()) {
-                $this->logger->debug("deleting old comment: " . $miroComment->getMiroId());
+                $this->logger->debug('deleting old comment: ' . $miroComment->getMiroId());
                 $this->__deleteShape($miroComment->getMiroId());
                 unset($this->aiComments[$miroComment->getMiroId()]);
             }
@@ -206,7 +193,7 @@ class MiroBoard
 
     private function __deleteShape(string $shapeId): void
     {
-        $url = "https://api.miro.com/v2/boards/" . urlencode($this->boardId) . "/shapes/" . $shapeId;
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/shapes/' . $shapeId;
         $response = $this->client->delete(
             $url,
             [
