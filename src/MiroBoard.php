@@ -235,7 +235,7 @@ class MiroBoard
     public function putCommentToSticker(MiroSticker $sticker, string $comment): void
     {
         $comment = MiroComment::bindMiroId($comment, $sticker->getMiroId());
-        $data = $this->__putComment($sticker, $comment, $sticker->getPosition()["x"] + 110, $sticker->getPosition()["y"] - 80);
+        $data = $this->__putComment($sticker, $comment, $sticker->getPosition()["x"] + 110, $sticker->getPosition()["y"] - 100);
         $miroComment = new MiroComment($data);
         $miroComment->setSticker($sticker);
     }
@@ -250,8 +250,8 @@ class MiroBoard
             $comment,
             // ($startItem->getPosition()["x"] + $endItem->getPosition()["x"]) / 2 + 100,
             // ($startItem->getPosition()["y"] + $endItem->getPosition()["y"]) / 2 - 50
-            $$endItem->getPosition()["x"],
-            $endItem->getPosition()["y"]
+            $endItem->getPosition()["x"] + 100,
+            $endItem->getPosition()["y"] - 100
         );
         $miroComment = new MiroComment($data);
         $miroComment->setConnector($connector);
