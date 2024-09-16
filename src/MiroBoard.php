@@ -18,9 +18,18 @@ class MiroBoard
     private array $stickers;
     private array $connectors;
     private array $aiComments;
+    private bool $useAiAssist;
+    private string $premiseText;
+    private string $directionForRootStickers;
+    private string $directionForChildStickers;
     private Logger $logger;
 
     const SHAPE_AICOMMENT = 'wedge_round_rectangle_callout';
+    const CONTROL_PANEL_FRAME_NAME = '制御盤';
+    const USE_AI_ASSIST_TEXT = '[AI支援]';
+    const PREMISE_TEXT_PREFIX = '[前提]';
+    const DIRECTION_FOR_ROOT_STICKERS_TEXT_PREFIX = '[最初の付箋の添削]';
+    const DIRECTION_FOR_CHILD_STICKERS_TEXT_PREFIX = '[子付箋の添削]';
 
     public function __construct(private string $token, private string $boardId)
     {
@@ -39,9 +48,60 @@ class MiroBoard
 
     public function refresh(): void
     {
+        $this->__loadControlPanel();
         $this->connectors = $this->__loadConnectors();
         $this->stickers = $this->__loadStickers();
         $this->aiComments = $this->__loadAiComments();
+    }
+
+    private function __loadControlPanel(): void
+    {
+        // get useAiAssist
+        // TODO: 10件だけでなく、全件対象に
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/items?limit=10&type=frame';
+        $response = $this->client->get(
+            $url,
+            ['headers' => $this->__headers()]
+        );
+        Utils::checkResponse($response, [200]);
+
+        $controlPanelId = null;
+        foreach (json_decode((string)$response->getBody(), false)->data as $data) {
+            // $result[$data->id] = $data;
+            if ($data->data->title !== self::CONTROL_PANEL_FRAME_NAME) {
+                continue;
+            }
+            $controlPanelId = $data->id;
+            break;
+        }
+        if (empty($controlPanelId)) {
+            throw new \Exception("Couldn't get controlPanelId");
+        }
+
+        // get directions for AI
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/items?limit=10&parent_item_id=' . $controlPanelId;
+        $response = $this->client->get(
+            $url,
+            ['headers' => $this->__headers()]
+        );
+
+        Utils::checkResponse($response, [200]);
+        foreach (json_decode((string)$response->getBody(), false)->data as $data) {
+            // var_dump($data);
+            $text = strip_tags($data->data->content);
+            if ($text === self::USE_AI_ASSIST_TEXT) {
+                $this->useAiAssist = true;
+            }
+            if (str_starts_with($text, self::PREMISE_TEXT_PREFIX)) {
+                $this->premiseText = str_replace(self::PREMISE_TEXT_PREFIX, '', $text);
+            }
+            if (str_starts_with($text, self::DIRECTION_FOR_ROOT_STICKERS_TEXT_PREFIX)) {
+                $this->directionForRootStickers = str_replace(self::DIRECTION_FOR_ROOT_STICKERS_TEXT_PREFIX, '', $text);
+            }
+            if (str_starts_with($text, self::DIRECTION_FOR_CHILD_STICKERS_TEXT_PREFIX)) {
+                $this->directionForChildStickers = str_replace(self::DIRECTION_FOR_CHILD_STICKERS_TEXT_PREFIX, '', $text);
+            }
+        }
     }
 
     private function __loadStickers(): array
@@ -50,9 +110,7 @@ class MiroBoard
         $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/items?limit=10&type=sticky_note';
         $response = $this->client->get(
             $url,
-            [
-                'headers' => $this->__headers(),
-            ]
+            ['headers' => $this->__headers()]
         );
         Utils::checkResponse($response, [200]);
 
@@ -71,9 +129,7 @@ class MiroBoard
         $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/connectors?limit=10';
         $response = $this->client->get(
             $url,
-            [
-                'headers' => $this->__headers(),
-            ]
+            ['headers' => $this->__headers()]
         );
         Utils::checkResponse($response, [200]);
 
@@ -92,9 +148,7 @@ class MiroBoard
         $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/items?limit=10&type=shape';
         $response = $this->client->get(
             $url,
-            [
-                'headers' => $this->__headers(),
-            ]
+            ['headers' => $this->__headers()]
         );
         Utils::checkResponse($response, [200]);
 
@@ -194,8 +248,10 @@ class MiroBoard
         $data = $this->__putComment(
             $connector,
             $comment,
-            ($startItem->getPosition()["x"] + $endItem->getPosition()["x"]) / 2 + 100,
-            ($startItem->getPosition()["y"] + $endItem->getPosition()["y"]) / 2 - 50
+            // ($startItem->getPosition()["x"] + $endItem->getPosition()["x"]) / 2 + 100,
+            // ($startItem->getPosition()["y"] + $endItem->getPosition()["y"]) / 2 - 50
+            $$endItem->getPosition()["x"],
+            $endItem->getPosition()["y"]
         );
         $miroComment = new MiroComment($data);
         $miroComment->setConnector($connector);
@@ -224,5 +280,23 @@ class MiroBoard
                 unset($this->aiComments[$miroComment->getMiroId()]);
             }
         }
+    }
+
+    public function useAiAssist(): bool
+    {
+        return $this->useAiAssist;
+    }
+
+    public function getPremiseText(): string
+    {
+        return $this->premiseText;
+    }
+    public function getDirectionForRootStickers(): string
+    {
+        return $this->directionForRootStickers;
+    }
+    public function getDirectionForChildStickers(): string
+    {
+        return $this->directionForChildStickers;
     }
 }

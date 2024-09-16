@@ -21,9 +21,14 @@ class MiroConnector
         return $this->miroItem->id;
     }
 
-    public function getText(): string
+    public function getTextWithTags(): string
     {
         return $this->text;
+    }
+
+    public function getText(): string
+    {
+        return strip_tags($this->getTextWithTags());
     }
 
     public function getModifiedAt(): string
