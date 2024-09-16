@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace MyApp;
 
 use MyApp\Utils;
+use MyApp\MiroSticker;
+use MyApp\MiroConnector;
 use MyApp\MiroComment;
 
 /**
@@ -37,8 +39,8 @@ class MiroBoard
 
     public function refresh(): void
     {
-        $this->stickers = $this->__loadStickers();
         $this->connectors = $this->__loadConnectors();
+        $this->stickers = $this->__loadStickers();
         $this->aiComments = $this->__loadAiComments();
     }
 
@@ -56,7 +58,9 @@ class MiroBoard
 
         $result = [];
         foreach (json_decode((string)$response->getBody(), false)->data as $data) {
-            $result[$data->id] = $data;
+            // $result[$data->id] = $data;
+            $miroSticker = new MiroSticker($data, $this->connectors);
+            $result[$data->id] = $miroSticker;
         }
         return $result;
     }
@@ -75,7 +79,9 @@ class MiroBoard
 
         $result = [];
         foreach (json_decode((string)$response->getBody(), false)->data as $data) {
-            $result[$data->id] = $data;
+            // $result[$data->id] = $data;
+            $miroConnector = new MiroConnector($data);
+            $result[$data->id] = $miroConnector;
         }
         return $result;
     }
@@ -105,11 +111,21 @@ class MiroBoard
         return $result;
     }
 
-    public function getRecentItems(int $count = 5): array
+    public function getRecentRootStickers(int $count = 5): array
     {
-        $data = $this->stickers;
-        usort($data, [MiroBoard::class, '__compareDate']);
-        return array_slice($data, 0, $count);
+        $result = [];
+        $stickers = $this->stickers;
+        usort($stickers, [MiroBoard::class, '__compareDate']);
+        foreach ($stickers as $sticker) {
+            if ($sticker->hasParent()) {
+                continue;
+            }
+            $result[] = $sticker;
+            if (count($result) >= $count) {
+                return $result;
+            }
+        }
+        return $result;
     }
 
     public function getRecentConnectors(int $count = 5): array
@@ -121,10 +137,10 @@ class MiroBoard
 
     private function __compareDate($a, $b)
     {
-        if ($a->modifiedAt == $b->modifiedAt) {
+        if ($a->getModifiedAt() == $b->getModifiedAt()) {
             return 0;
         }
-        return ($a->modifiedAt > $b->modifiedAt) ? -1 : 1;      // MEMO: 更新日時の降順
+        return ($a->getModifiedAt() > $b->getModifiedAt()) ? -1 : 1;      // MEMO: 更新日時の降順
     }
 
     public function getStickerText(string $id): string
@@ -157,10 +173,10 @@ class MiroBoard
         return json_decode((string)$response->getBody(), false);
     }
 
-    public function putCommentToSticker($sticker, string $comment): void
+    public function putCommentToSticker(MiroSticker $sticker, string $comment): void
     {
-        $comment = MiroComment::bindStickerId($comment, $sticker->id);
-        $data = $this->__putComment($sticker, $comment, $sticker->position->x + 110, $sticker->position->y - 80);
+        $comment = MiroComment::bindStickerId($comment, $sticker->getMiroId());
+        $data = $this->__putComment($sticker, $comment, $sticker->getPosition()["x"] + 110, $sticker->getPosition()["y"] - 80);
         $miroComment = new MiroComment($data);
         $miroComment->setSticker($sticker);
     }
@@ -201,10 +217,10 @@ class MiroBoard
         }
     }
 
-    public function hasAiComment($sticker): bool
+    public function hasAiComment(MiroSticker $sticker): bool
     {
         foreach ($this->aiComments as $miroComment) {
-            if ($sticker->id === $miroComment->getStickerId()) {
+            if ($sticker->getMiroId() === $miroComment->getStickerId()) {
                 return true;
             }
         }

@@ -49,29 +49,28 @@ function main()
     $miroBoard = new MiroBoard($config->miro->token, $config->miro->board_id);
     $gpt = new Gpt($config->gpt->secret, $config->gpt->model);
 
-    $max_loop = 5;
+    $max_loop = 1;
     while ($max_loop-- > 0) {
         $miroBoard->refresh();
 
         $miroBoard->clearAiCommentsForModifiedStickers();
         // $miroBoard->clearCommentsForUpdatedStickers();
 
-        // TODO: miro apiレスポンスのデータ構造に依存しすぎ
-        foreach ($miroBoard->getRecentItems(2) as $miroItem) {
-            $logger->info("Processing miroItem: {$miroItem->data->content}");
+        foreach ($miroBoard->getRecentRootStickers(2) as $sticker) {
+            $logger->info("Processing miroItem: {$sticker->getText()}");
 
-            if ($miroBoard->hasAiComment($miroItem)) {
+            if ($miroBoard->hasAiComment($sticker)) {
                 $logger->info("MiroComment exists, skipping", 1);
                 continue;
             }
 
-            $comment = getCommentForSticker($gpt, $miroItem->data->content);
+            $comment = getCommentForSticker($gpt, $sticker->getText());
             $logger->info("Comment from gpt: {$comment}", 1);
 
             if ($comment === COMMENT_NONE) {
                 continue;
             }
-            $miroBoard->putCommentToSticker($miroItem, $comment);
+            $miroBoard->putCommentToSticker($sticker, $comment);
         }
 
         // foreach ($miroBoard->getRecentConnectors(2) as $miroConnector) {

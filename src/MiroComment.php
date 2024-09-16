@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace MyApp;
 
+use MyApp\MiroSticker;
+
 /**
  * Miro上のコメントオブジェクト
  */
 class MiroComment
 {
-    private $sticker;
+    private MiroSticker $sticker;
     // private string $text;
     private string $shapeText;
 
@@ -20,7 +22,7 @@ class MiroComment
 
     public static function extractStickerId(string $shapeText): ?string
     {
-        var_dump(($shapeText));
+        // var_dump(($shapeText));
         preg_match('/\[([0-9]+?)\]/', $shapeText, $matches);
         return count($matches) === 2 ? $matches[1] : null;
     }
@@ -30,19 +32,19 @@ class MiroComment
         return $shapeText . "\n[" . $stickerId . "]";
     }
 
-    public function setSticker($sticker): void
+    public function setSticker(MiroSticker $sticker): void
     {
         $this->sticker = $sticker;
     }
 
     public function getStickerId(): string
     {
-        return $this->sticker->id;
+        return $this->sticker->getMiroId();
     }
 
     public function isStickerModified(): bool
     {
-        return $this->sticker->modifiedAt > $this->miroItem->createdAt;
+        return $this->sticker->getModifiedAt() > $this->miroItem->createdAt;
     }
 
     public function getMiroId(): string
