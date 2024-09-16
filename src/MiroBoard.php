@@ -4,17 +4,28 @@ declare(strict_types=1);
 
 namespace MyApp;
 
-use MyApp\Logger;
+use MyApp\Utils;
+use MyApp\MiroSticker;
+use MyApp\MiroConnector;
+use MyApp\MiroComment;
 
+/**
+ * Miroボードレベルクラス
+ */
 class MiroBoard
 {
     private \GuzzleHttp\Client $client;
+    private array $stickers;
+    private array $connectors;
+    private array $aiComments;
     private Logger $logger;
+
+    const SHAPE_AICOMMENT = 'wedge_round_rectangle_callout';
 
     public function __construct(private string $token, private string $boardId)
     {
         $this->client = new \GuzzleHttp\Client();
-        $this->logger = new Logger();
+        $this->logger = new Logger(Logger::DEBUG);
     }
 
     private function __headers(): array
@@ -26,59 +37,127 @@ class MiroBoard
         ];
     }
 
-    public function readRecentItems(int $count = 5): array
+    public function refresh(): void
     {
-        $url = "https://api.miro.com/v2/boards/" . urlencode($this->boardId) . "/items?limit=10&type=sticky_note";
+        $this->connectors = $this->__loadConnectors();
+        $this->stickers = $this->__loadStickers();
+        $this->aiComments = $this->__loadAiComments();
+    }
+
+    private function __loadStickers(): array
+    {
+        // TODO: 10件だけでなく、全件対象に
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/items?limit=10&type=sticky_note';
         $response = $this->client->get(
             $url,
             [
                 'headers' => $this->__headers(),
-                // 'headers' => [
-                //     'accept' => 'application/json',
-                //     'authorization' => "Bearer {$this->token}",
-                // ]
             ]
         );
+        Utils::checkResponse($response, [200]);
 
-        if ($response->getStatusCode() != 200) {
-            throw new \Exception("Request error: [{$response->getStatusCode()} {$response->getReasonPhrase()}");
+        $result = [];
+        foreach (json_decode((string)$response->getBody(), false)->data as $data) {
+            // $result[$data->id] = $data;
+            $miroSticker = new MiroSticker($data, $this->connectors);
+            $result[$data->id] = $miroSticker;
         }
-        $data = json_decode((string)$response->getBody(), false)->data;
-        // $this->logger->info("data 1");
-        // $this->logger->info($data);
-        usort($data, [MiroBoard::class, "__compareDate"]);
-        // $this->logger->info("data 2");
-        // $this->logger->info($data);
-        $data = array_slice($data, 0, $count);
-        // $this->logger->info("data 3");
-        // $this->logger->info($data);
+        return $result;
+    }
 
-        return $data;
+    private function __loadConnectors(): array
+    {
+        // TODO: 10件だけでなく、全件対象に
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/connectors?limit=10';
+        $response = $this->client->get(
+            $url,
+            [
+                'headers' => $this->__headers(),
+            ]
+        );
+        Utils::checkResponse($response, [200]);
+
+        $result = [];
+        foreach (json_decode((string)$response->getBody(), false)->data as $data) {
+            // $result[$data->id] = $data;
+            $miroConnector = new MiroConnector($data);
+            $result[$data->id] = $miroConnector;
+        }
+        return $result;
+    }
+
+    private function __loadAiComments(): array
+    {
+        // TODO: 10件だけでなく、全件対象に
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/items?limit=10&type=shape';
+        $response = $this->client->get(
+            $url,
+            [
+                'headers' => $this->__headers(),
+            ]
+        );
+        Utils::checkResponse($response, [200]);
+
+        $result = [];
+        foreach (json_decode((string)$response->getBody(), false)->data as $data) {
+            if (isset($data->data->shape) && !in_array($data->data->shape, [self::SHAPE_AICOMMENT])) {
+                continue;
+            }
+            $miroComment = new MiroComment($data);
+            $stickerId = MiroComment::extractStickerId($miroComment->getText());
+            $miroComment->setSticker($this->stickers[$stickerId]);
+            $result[$data->id] = $miroComment;
+        }
+        return $result;
+    }
+
+    public function getRecentRootStickers(int $count = 5): array
+    {
+        $result = [];
+        $stickers = $this->stickers;
+        usort($stickers, [MiroBoard::class, '__compareDate']);
+        foreach ($stickers as $sticker) {
+            if ($sticker->hasParent()) {
+                continue;
+            }
+            $result[] = $sticker;
+            if (count($result) >= $count) {
+                return $result;
+            }
+        }
+        return $result;
+    }
+
+    public function getRecentConnectors(int $count = 5): array
+    {
+        $data = $this->connectors;
+        usort($data, [MiroBoard::class, '__compareDate']);
+        return array_slice($data, 0, $count);
     }
 
     private function __compareDate($a, $b)
     {
-        if ($a->modifiedAt == $b->modifiedAt) {
+        if ($a->getModifiedAt() == $b->getModifiedAt()) {
             return 0;
         }
-        return ($a->modifiedAt < $b->modifiedAt) ? -1 : 1;
+        return ($a->getModifiedAt() > $b->getModifiedAt()) ? -1 : 1;      // MEMO: 更新日時の降順
     }
 
-    public function putComment($parentItem, string $comment): void
+    public function getStickerText(string $id): string
+    {
+        return strip_tags($this->stickers[$id]->data->content);
+    }
+
+    private function __putComment($targetItem, string $comment, float $x, float $y): object
     {
         $body = [
-            "data" => [
-                "content" => $comment,
-                "shape" => "wedge_round_rectangle_callout",
+            'data' => [
+                'content' => $comment,
+                'shape' => self::SHAPE_AICOMMENT,
             ],
-            "style" => ["borderColor" => "#1a1a1a", "borderOpacity" => "0.5", "fillOpacity" => "0.5"],
-            "position" => [
-                "x" => $parentItem->position->x + 100,
-                "y" => $parentItem->position->y + 50,
-            ],
-            // "parent" => [
-            //     "id" => $parentItem->id,
-            // ],
+            'style' => ['borderColor' => '#1a1a1a', 'borderOpacity' => '0.7', 'fillOpacity' => '0.7', 'fillColor' => '#ffffff', 'fontSize' => 12],
+            'position' => ['x' => $x, 'y' => $y],
+            'geometry' => ['height' => 150, 'width' => 250],
         ];
 
         $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/shapes';
@@ -90,8 +169,63 @@ class MiroBoard
             ]
         );
 
-        if ($response->getStatusCode() != 201) {
-            throw new \Exception("Request error: [{$response->getStatusCode()} {$response->getReasonPhrase()}");
+        Utils::checkResponse($response, [201]);
+        return json_decode((string)$response->getBody(), false);
+    }
+
+    public function putCommentToSticker(MiroSticker $sticker, string $comment): void
+    {
+        $comment = MiroComment::bindStickerId($comment, $sticker->getMiroId());
+        $data = $this->__putComment($sticker, $comment, $sticker->getPosition()["x"] + 110, $sticker->getPosition()["y"] - 80);
+        $miroComment = new MiroComment($data);
+        $miroComment->setSticker($sticker);
+    }
+
+    // public function putCommentToConnector($connector, string $comment): void
+    // {
+    //     $comment = $this->__bindToConnector($connector, $comment);
+    //     $this->__putComment(
+    //         $connector,
+    //         $miroComment->comment,
+    //         ($this->stickers[$connector->startItem->id]->position->x + $this->stickers[$connector->endItem->id]->position->x) / 2 + 100,
+    //         ($this->stickers[$connector->startItem->id]->position->y + $this->stickers[$connector->endItem->id]->position->y) / 2 - 50
+    //     );
+    // }
+
+    private function __deleteShape(string $shapeId): void
+    {
+        $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/shapes/' . $shapeId;
+        $response = $this->client->delete(
+            $url,
+            [
+                'headers' => $this->__headers(),
+            ]
+        );
+        Utils::checkResponse($response, [204]);
+    }
+
+    public function clearAiCommentsForModifiedStickers(): void
+    {
+        foreach ($this->aiComments as $miroComment) {
+            $this->logger->debug('checking modified for ' . $miroComment->getText());
+            // var_dump($miroComment);
+            if ($miroComment->isStickerModified()) {
+                $this->logger->debug('deleting old comment: ' . $miroComment->getMiroId());
+                $this->__deleteShape($miroComment->getMiroId());
+                unset($this->aiComments[$miroComment->getMiroId()]);
+            }
         }
     }
+
+    public function hasAiComment(MiroSticker $sticker): bool
+    {
+        foreach ($this->aiComments as $miroComment) {
+            if ($sticker->getMiroId() === $miroComment->getStickerId()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // public function clearCommentsForUpdatedConnectors(): void {}
 }
