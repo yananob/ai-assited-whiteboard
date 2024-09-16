@@ -85,7 +85,7 @@ function main()
             $miroBoard->putCommentToConnector($miroConnector, $comment);
         }
 
-        break;      // DEBUB
+        break;      // DEBUG
         // $logger->info("Sleeping");
         // sleep(10);
     }
