@@ -111,13 +111,18 @@ class MiroBoard
         return $result;
     }
 
+    public function getAiComments(): array
+    {
+        return $this->aiComments;
+    }
+
     public function getRecentRootStickers(int $count = 5): array
     {
         $result = [];
         $stickers = $this->stickers;
         usort($stickers, [MiroBoard::class, '__compareDate']);
         foreach ($stickers as $sticker) {
-            if ($sticker->hasParent()) {
+            if ($sticker->hasParentStickers()) {
                 continue;
             }
             $result[] = $sticker;
@@ -145,7 +150,7 @@ class MiroBoard
 
     public function getStickerText(string $id): string
     {
-        return strip_tags($this->stickers[$id]->data->content);
+        return strip_tags($this->stickers[$id]->getText());
     }
 
     private function __putComment($targetItem, string $comment, float $x, float $y): object
@@ -175,22 +180,26 @@ class MiroBoard
 
     public function putCommentToSticker(MiroSticker $sticker, string $comment): void
     {
-        $comment = MiroComment::bindStickerId($comment, $sticker->getMiroId());
+        $comment = MiroComment::bindMiroId($comment, $sticker->getMiroId());
         $data = $this->__putComment($sticker, $comment, $sticker->getPosition()["x"] + 110, $sticker->getPosition()["y"] - 80);
         $miroComment = new MiroComment($data);
         $miroComment->setSticker($sticker);
     }
 
-    // public function putCommentToConnector($connector, string $comment): void
-    // {
-    //     $comment = $this->__bindToConnector($connector, $comment);
-    //     $this->__putComment(
-    //         $connector,
-    //         $miroComment->comment,
-    //         ($this->stickers[$connector->startItem->id]->position->x + $this->stickers[$connector->endItem->id]->position->x) / 2 + 100,
-    //         ($this->stickers[$connector->startItem->id]->position->y + $this->stickers[$connector->endItem->id]->position->y) / 2 - 50
-    //     );
-    // }
+    public function putCommentToConnector(MiroConnector $connector, string $comment): void
+    {
+        $comment = MiroComment::bindMiroId($comment, $connector->getMiroId());
+        $startItem = $this->stickers[$connector->getStartItemId()];
+        $endItem = $this->stickers[$connector->getEndItemId()];
+        $data = $this->__putComment(
+            $connector,
+            $comment,
+            ($startItem->getPosition()["x"] + $endItem->getPosition()["x"]) / 2 + 100,
+            ($startItem->getPosition()["y"] + $endItem->getPosition()["y"]) / 2 - 50
+        );
+        $miroComment = new MiroComment($data);
+        $miroComment->setConnector($connector);
+    }
 
     private function __deleteShape(string $shapeId): void
     {
@@ -204,28 +213,16 @@ class MiroBoard
         Utils::checkResponse($response, [204]);
     }
 
-    public function clearAiCommentsForModifiedStickers(): void
+    public function clearAiCommentsForModifiedItems(): void
     {
         foreach ($this->aiComments as $miroComment) {
             $this->logger->debug('checking modified for ' . $miroComment->getText());
             // var_dump($miroComment);
-            if ($miroComment->isStickerModified()) {
+            if ($miroComment->isBindedItemModified()) {
                 $this->logger->debug('deleting old comment: ' . $miroComment->getMiroId());
                 $this->__deleteShape($miroComment->getMiroId());
                 unset($this->aiComments[$miroComment->getMiroId()]);
             }
         }
     }
-
-    public function hasAiComment(MiroSticker $sticker): bool
-    {
-        foreach ($this->aiComments as $miroComment) {
-            if ($sticker->getMiroId() === $miroComment->getStickerId()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // public function clearCommentsForUpdatedConnectors(): void {}
 }

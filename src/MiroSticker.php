@@ -21,11 +21,11 @@ class MiroSticker
         $this->parentIds = [];
         $this->childIds = [];
         foreach ($connectors as $connector) {
-            if ($connector->getStartItem()->id === $this->getMiroId()) {
-                $this->childIds[] = $connector->getEndItem()->id;
+            if ($connector->getStartItemId() === $this->getMiroId()) {
+                $this->childIds[] = $connector->getEndItemId();
             }
-            if ($connector->getEndItem()->id === $this->getMiroId()) {
-                $this->parentIds[] = $connector->getStartItem()->id;
+            if ($connector->getEndItemId() === $this->getMiroId()) {
+                $this->parentIds[] = $connector->getStartItemId();
             }
         }
         // var_dump(str_repeat("-", 80));
@@ -56,8 +56,24 @@ class MiroSticker
         return ["x" => $this->miroItem->position->x, "y" => $this->miroItem->position->y];
     }
 
-    public function hasParent(): bool
+    public function hasParentStickers(): bool
     {
         return !empty($this->parentIds);
     }
+
+    public function hasChildStickers(): bool
+    {
+        return !empty($this->childIds);
+    }
+
+    public function hasAiComment(array $aiComments): bool
+    {
+        foreach ($aiComments as $miroComment) {
+            if ($this->getMiroId() === $miroComment->getBindedItem()->getMiroId()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

@@ -31,13 +31,13 @@ class MiroConnector
         return $this->miroItem->modifiedAt;
     }
 
-    public function getStartItem(): object
+    public function getStartItemId(): string
     {
-        return $this->miroItem->startItem;
+        return $this->miroItem->startItem->id;
     }
 
-    public function getEndItem(): object
+    public function getEndItemId(): string
     {
-        return $this->miroItem->endItem;
+        return $this->miroItem->endItem->id;
     }
 }

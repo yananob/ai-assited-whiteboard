@@ -12,39 +12,12 @@ use MyApp\MiroSticker;
 class MiroComment
 {
     private MiroSticker $sticker;
-    // private string $text;
+    private MiroConnector $connector;
     private string $shapeText;
 
     public function __construct(private $miroItem)
     {
         $this->shapeText = $miroItem->data->content;
-    }
-
-    public static function extractStickerId(string $shapeText): ?string
-    {
-        // var_dump(($shapeText));
-        preg_match('/\[([0-9]+?)\]/', $shapeText, $matches);
-        return count($matches) === 2 ? $matches[1] : null;
-    }
-
-    public static function bindStickerId(string $shapeText, string $stickerId): string
-    {
-        return $shapeText . "\n[" . $stickerId . "]";
-    }
-
-    public function setSticker(MiroSticker $sticker): void
-    {
-        $this->sticker = $sticker;
-    }
-
-    public function getStickerId(): string
-    {
-        return $this->sticker->getMiroId();
-    }
-
-    public function isStickerModified(): bool
-    {
-        return $this->sticker->getModifiedAt() > $this->miroItem->createdAt;
     }
 
     public function getMiroId(): string
@@ -55,5 +28,42 @@ class MiroComment
     public function getText(): string
     {
         return $this->shapeText;
+    }
+
+    public static function extractStickerId(string $shapeText): ?string
+    {
+        preg_match('/\[([0-9]+?)\]/', $shapeText, $matches);
+        return count($matches) === 2 ? $matches[1] : null;
+    }
+
+    public static function bindMiroId(string $shapeText, string $stickerId): string
+    {
+        return $shapeText . "\n[" . $stickerId . "]";
+    }
+
+    public function setSticker(MiroSticker $sticker): void
+    {
+        $this->sticker = $sticker;
+    }
+
+    public function setConnector(MiroConnector $connector): void
+    {
+        $this->connector = $connector;
+    }
+
+    public function getBindedItem(): MiroSticker|MiroConnector|null
+    {
+        if (!empty($this->sticker)) {
+            return $this->sticker;
+        }
+        if (!empty($this->connector)) {
+            return $this->connector;
+        }
+        return null;
+    }
+
+    public function isBindedItemModified(): bool
+    {
+        return $this->getBindedItem()->getModifiedAt() > $this->miroItem->createdAt;
     }
 }
