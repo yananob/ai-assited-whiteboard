@@ -1,1 +1,1 @@
-# ai-assited-miro
+# AI assited whiteboard
