@@ -77,6 +77,7 @@ class MiroComment
 
     public function isBindedItemModified(): bool
     {
+        // TODO: connectorに繋がれている場合は、矢印/startItem/endItemいずれかが更新されている場合に"更新された”とする
         return $this->getBindedItem()->getModifiedAt() > $this->miroItem->createdAt;
     }
 }

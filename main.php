@@ -36,7 +36,7 @@ function main()
 
         $miroBoard->clearAiCommentsForModifiedItems();
 
-        foreach ($miroBoard->getRecentRootStickers(3) as $sticker) {
+        foreach ($miroBoard->getRecentRootStickers(5) as $sticker) {
             $logger->info("Processing miroItem: {$sticker->getText()}");
 
             if ($sticker->hasAiComment($miroBoard->getAiComments())) {
@@ -53,7 +53,7 @@ function main()
             $miroBoard->putCommentToSticker($sticker, $comment);
         }
 
-        foreach ($miroBoard->getRecentConnectors(3) as $miroConnector) {
+        foreach ($miroBoard->getRecentConnectors(5) as $miroConnector) {
             $logger->info("Processing miroConnector: {$miroConnector->getText()}");
 
             if ($miroConnector->hasAiComment($miroBoard->getAiComments())) {
