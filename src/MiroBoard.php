@@ -154,7 +154,6 @@ class MiroBoard
         Utils::checkResponse($response, [200]);
 
         $result = [];
-        var_dump($this->stickers);
         foreach (json_decode((string)$response->getBody(), false)->data as $data) {
             if (isset($data->data->shape) && !in_array($data->data->shape, [self::SHAPE_AICOMMENT])) {
                 continue;
@@ -223,7 +222,7 @@ class MiroBoard
                 'content' => $comment,
                 'shape' => self::SHAPE_AICOMMENT,
             ],
-            'style' => ['borderColor' => '#1a1a1a', 'borderOpacity' => '0.7', 'fillOpacity' => '0.7', 'fillColor' => '#ffffff', 'fontSize' => 12],
+            'style' => ['borderColor' => '#1a1a1a', 'borderOpacity' => '0.9', 'fillOpacity' => '0.9', 'fillColor' => '#ffaa55', 'fontSize' => 12],
             'position' => ['x' => $x, 'y' => $y],
             'geometry' => ['height' => 150, 'width' => 250],
         ];
