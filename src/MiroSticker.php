@@ -80,5 +80,4 @@ class MiroSticker
         }
         return false;
     }
-
 }

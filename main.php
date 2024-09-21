@@ -22,6 +22,7 @@ function main()
     while ($max_loop-- > 0) {
         $miroBoard->refresh();
         if (!$miroBoard->useAiAssist()) {
+            $logger->info("not using AiAssist, exiting");
             continue;
         }
 
@@ -55,6 +56,11 @@ function main()
         foreach ($miroBoard->getRecentConnectors(2) as $miroConnector) {
             $logger->info("Processing miroConnector: {$miroConnector->getText()}");
 
+            if ($miroConnector->hasAiComment($miroBoard->getAiComments())) {
+                $logger->info("MiroComment exists, skipping", 1);
+                continue;
+            }
+
             // $comment = getCommentForConnector($miroBoard, $assistant, $miroConnector);
             $comment = $assistant->getCommentForConnector(
                 $miroBoard->getStickerText($miroConnector->getStartItemId()),
@@ -68,9 +74,9 @@ function main()
             $miroBoard->putCommentToConnector($miroConnector, $comment);
         }
 
-        break;      // DEBUG
-        // $logger->info("Sleeping");
-        // sleep(10);
+        // break;      // DEBUG
+        $logger->info("Sleeping");
+        sleep(10);
     }
 }
 
