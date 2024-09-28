@@ -48,11 +48,16 @@ class MiroConnector
 
     public function hasAiComment(array $aiComments): bool
     {
+        return is_null($this->getBindedComment($aiComments)) ? false : true;
+    }
+
+    public function getBindedComment(array $aiComments): ?MiroComment
+    {
         foreach ($aiComments as $miroComment) {
             if ($this->getMiroId() === $miroComment->getBindedItem()->getMiroId()) {
-                return true;
+                return $miroComment;
             }
         }
-        return false;
+        return null;
     }
 }

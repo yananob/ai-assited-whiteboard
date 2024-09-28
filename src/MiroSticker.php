@@ -28,12 +28,6 @@ class MiroSticker
                 $this->parentIds[] = $connector->getStartItemId();
             }
         }
-        // var_dump(str_repeat("-", 80));
-        // var_dump($this->getText());
-        // var_dump(("parentIds:"));
-        // var_dump($this->parentIds);
-        // var_dump(("childIds:"));
-        // var_dump($this->childIds);
     }
 
     public function getMiroId(): string

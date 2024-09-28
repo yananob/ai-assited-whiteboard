@@ -9,7 +9,6 @@ use MyApp\AiAssistant;
 use MyApp\MiroBoard;
 
 const MAX_ITEMS_FOR_COMMENT = 5;
-const COMMENT_THINKING = '.....';
 
 function main()
 {
@@ -47,7 +46,7 @@ function main()
                 continue;
             }
 
-            $miroBoard->putCommentToSticker($sticker, COMMENT_THINKING);
+            $miroBoard->putThinkingCommentToSticker($sticker);
             $comment = $assistant->getCommentForRootSticker($sticker->getText());
             $logger->info("Comment for stickers from GPT: {$comment}", 1);
             $miroBoard->deleteBindedComment($sticker);
@@ -65,12 +64,14 @@ function main()
                 continue;
             }
 
+            $miroBoard->putThinkingCommentToConnector($miroConnector);
             $comment = $assistant->getCommentForConnector(
                 $miroBoard->getStickerText($miroConnector->getStartItemId()),
                 $miroConnector->getText(),
                 $miroBoard->getStickerText($miroConnector->getEndItemId())
             );
             $logger->info("Comment for connectors from GPT: {$comment}", 1);
+            $miroBoard->deleteBindedComment($miroConnector);
             if (empty($comment)) {
                 continue;
             }

@@ -30,6 +30,7 @@ class MiroBoard
     const PREMISE_TEXT_PREFIX = '[前提]';
     const DIRECTION_FOR_ROOT_STICKERS_TEXT_PREFIX = '[最初の付箋の添削]';
     const DIRECTION_FOR_CHILD_STICKERS_TEXT_PREFIX = '[子付箋の添削]';
+    const COMMENT_THINKING = '...😑...';
 
     public function __construct(private string $token, private string $boardId)
     {
@@ -215,8 +216,21 @@ class MiroBoard
         return strip_tags($this->stickers[$id]->getText());
     }
 
-    private function __putComment($targetItem, string $comment, float $x, float $y): object
+    private function __putComment(string $comment, float $x, float $y): object
     {
+        $strlen = mb_strlen($comment);
+        switch (true) {
+            case $strlen < 50;
+                [$height, $width] = [50, 150];
+                break;
+            case $strlen < 100;
+                [$height, $width] = [100, 200];
+                break;
+            default;
+                [$height, $width] = [150, 250];
+                break;
+        }
+            
         $body = [
             'data' => [
                 'content' => $comment,
@@ -224,7 +238,7 @@ class MiroBoard
             ],
             'style' => ['borderColor' => '#1a1a1a', 'borderOpacity' => '0.9', 'fillOpacity' => '0.9', 'fillColor' => '#ffaa55', 'fontSize' => 12],
             'position' => ['x' => $x, 'y' => $y],
-            'geometry' => ['height' => 150, 'width' => 250],
+            'geometry' => ['height' => $height, 'width' => $width],
         ];
 
         $url = 'https://api.miro.com/v2/boards/' . urlencode($this->boardId) . '/shapes';
@@ -240,13 +254,23 @@ class MiroBoard
         return json_decode((string)$response->getBody(), false);
     }
 
+    public function putThinkingCommentToSticker(MiroSticker $sticker): void
+    {
+        $this->putCommentToSticker($sticker, self::COMMENT_THINKING);
+    }
+
     public function putCommentToSticker(MiroSticker $sticker, string $comment): void
     {
         $comment = MiroComment::getBindedCommentToSticker($comment, $sticker->getMiroId());
-        $data = $this->__putComment($sticker, $comment, $sticker->getPosition()["x"] + 110, $sticker->getPosition()["y"] - 100);
+        $data = $this->__putComment($comment, $sticker->getPosition()["x"] + 110, $sticker->getPosition()["y"] - 100);
         $miroComment = new MiroComment($data);
         $miroComment->setSticker($sticker);
         $this->aiComments[] = $miroComment;
+    }
+
+    public function putThinkingCommentToConnector(MiroConnector $connector): void
+    {
+        $this->putCommentToConnector($connector, self::COMMENT_THINKING);
     }
 
     public function putCommentToConnector(MiroConnector $connector, string $comment): void
@@ -255,7 +279,6 @@ class MiroBoard
         // $startItem = $this->stickers[$connector->getStartItemId()];
         $endItem = $this->stickers[$connector->getEndItemId()];
         $data = $this->__putComment(
-            $connector,
             $comment,
             // ($startItem->getPosition()["x"] + $endItem->getPosition()["x"]) / 2 + 100,
             // ($startItem->getPosition()["y"] + $endItem->getPosition()["y"]) / 2 - 50
@@ -264,11 +287,12 @@ class MiroBoard
         );
         $miroComment = new MiroComment($data);
         $miroComment->setConnector($connector);
+        $this->aiComments[] = $miroComment;
     }
 
-    public function deleteBindedComment(MiroSticker $sticker): void
+    public function deleteBindedComment(MiroSticker|MiroConnector $miroItem): void
     {
-        $this->__deleteShape($sticker->getBindedComment($this->aiComments)->getMiroId());
+        $this->__deleteShape($miroItem->getBindedComment($this->aiComments)->getMiroId());
     }
 
     private function __deleteShape(string $shapeId): void
@@ -287,7 +311,6 @@ class MiroBoard
     {
         foreach ($this->aiComments as $miroComment) {
             $this->logger->debug('checking modified for ' . $miroComment->getText());
-            // var_dump($miroComment);
             if ($miroComment->isBindedItemModified()) {
                 $this->logger->debug('deleting old comment: ' . $miroComment->getMiroId());
                 $this->__deleteShape($miroComment->getMiroId());
