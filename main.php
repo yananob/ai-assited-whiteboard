@@ -8,7 +8,7 @@ use MyApp\Logger;
 use MyApp\AiAssistant;
 use MyApp\MiroBoard;
 
-const MAX_ITEMS_FOR_COMMENT = 3;
+const MAX_ITEMS_FOR_COMMENT = 10;
 
 function main()
 {
