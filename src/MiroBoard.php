@@ -89,8 +89,7 @@ class MiroBoard
 
         Utils::checkResponse($response, [200]);
         foreach (json_decode((string)$response->getBody(), false)->data as $data) {
-            // var_dump($data);
-            $text = strip_tags($data->data->content);
+            $text = $this->__cleanupText($data->data->content);
             if ($text === self::USE_AI_ASSIST_TEXT) {
                 $this->useAiAssist = true;
             }
@@ -104,6 +103,12 @@ class MiroBoard
                 $this->directionForChildStickers = str_replace(self::DIRECTION_FOR_CHILD_STICKERS_TEXT_PREFIX, '', $text);
             }
         }
+    }
+
+    private function __cleanupText(string $text): string
+    {
+        $text = preg_replace('/<\/p><p>/', "\n", $text);
+        return strip_tags($text);
     }
 
     private function __loadStickers(): array
