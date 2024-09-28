@@ -35,6 +35,7 @@ class MiroBoard
     {
         $this->client = new \GuzzleHttp\Client();
         $this->logger = new Logger(Logger::DEBUG);
+        $this->useAiAssist = false;
     }
 
     private function __headers(): array
@@ -158,8 +159,15 @@ class MiroBoard
                 continue;
             }
             $miroComment = new MiroComment($data);
-            $stickerId = MiroComment::extractStickerId($miroComment->getText());
-            $miroComment->setSticker($this->stickers[$stickerId]);
+            [$bindedType, $bindedId] = MiroComment::extractBinded($miroComment->getText());
+            if ($bindedType == MiroComment::BINDED_TYPE_STICKER) {
+                $miroComment->setSticker($this->stickers[$bindedId]);
+            } elseif ($bindedType == MiroComment::BINDED_TYPE_CONNECTOR) {
+                $miroComment->setConnector($this->connectors[$bindedId]);
+            } else {
+                throw new \Exception("Could not get binded item for:\n" . $miroComment->getText());
+                // $this->logger("Skipping ")
+            }   
             $result[$data->id] = $miroComment;
         }
         return $result;
@@ -214,7 +222,7 @@ class MiroBoard
                 'content' => $comment,
                 'shape' => self::SHAPE_AICOMMENT,
             ],
-            'style' => ['borderColor' => '#1a1a1a', 'borderOpacity' => '0.7', 'fillOpacity' => '0.7', 'fillColor' => '#ffffff', 'fontSize' => 12],
+            'style' => ['borderColor' => '#1a1a1a', 'borderOpacity' => '0.9', 'fillOpacity' => '0.9', 'fillColor' => '#ffaa55', 'fontSize' => 12],
             'position' => ['x' => $x, 'y' => $y],
             'geometry' => ['height' => 150, 'width' => 250],
         ];
@@ -234,7 +242,7 @@ class MiroBoard
 
     public function putCommentToSticker(MiroSticker $sticker, string $comment): void
     {
-        $comment = MiroComment::bindMiroId($comment, $sticker->getMiroId());
+        $comment = MiroComment::getBindedCommentToSticker($comment, $sticker->getMiroId());
         $data = $this->__putComment($sticker, $comment, $sticker->getPosition()["x"] + 110, $sticker->getPosition()["y"] - 100);
         $miroComment = new MiroComment($data);
         $miroComment->setSticker($sticker);
@@ -242,8 +250,8 @@ class MiroBoard
 
     public function putCommentToConnector(MiroConnector $connector, string $comment): void
     {
-        $comment = MiroComment::bindMiroId($comment, $connector->getMiroId());
-        $startItem = $this->stickers[$connector->getStartItemId()];
+        $comment = MiroComment::getBindedCommentToConnector($comment, $connector->getMiroId());
+        // $startItem = $this->stickers[$connector->getStartItemId()];
         $endItem = $this->stickers[$connector->getEndItemId()];
         $data = $this->__putComment(
             $connector,

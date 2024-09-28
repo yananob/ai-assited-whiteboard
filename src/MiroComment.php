@@ -15,6 +15,9 @@ class MiroComment
     private MiroConnector $connector;
     private string $shapeText;
 
+    const BINDED_TYPE_STICKER = 'ST';
+    const BINDED_TYPE_CONNECTOR = 'CN';
+
     public function __construct(private $miroItem)
     {
         $this->shapeText = $miroItem->data->content;
@@ -30,15 +33,25 @@ class MiroComment
         return $this->shapeText;
     }
 
-    public static function extractStickerId(string $shapeText): ?string
+    public static function extractBinded(string $shapeText): ?array
     {
-        preg_match('/\[([0-9]+?)\]/', $shapeText, $matches);
-        return count($matches) === 2 ? $matches[1] : null;
+        preg_match('/\[([A-Z]+?),([0-9]+?)\]/', $shapeText, $matches);
+        return count($matches) === 3 ? [(string)$matches[1], $matches[2]] : null;
     }
 
-    public static function bindMiroId(string $shapeText, string $stickerId): string
+    public static function getBindedCommentToSticker(string $shapeText, string $stickerId): string
     {
-        return $shapeText . "\n[" . $stickerId . "]";
+        return self::__getBindedCommentWithMiroId($shapeText, $stickerId, self::BINDED_TYPE_STICKER);
+    }
+
+    public static function getBindedCommentToConnector(string $shapeText, string $connectorId): string
+    {
+        return self::__getBindedCommentWithMiroId($shapeText, $connectorId, self::BINDED_TYPE_CONNECTOR);
+    }
+
+    private static function __getBindedCommentWithMiroId(string $shapeText, string $miroId, $bindedType): string
+    {
+        return $shapeText . "\n[" . $bindedType . "," . $miroId . "]";
     }
 
     public function setSticker(MiroSticker $sticker): void
@@ -64,6 +77,7 @@ class MiroComment
 
     public function isBindedItemModified(): bool
     {
+        // TODO: connectorに繋がれている場合は、矢印/startItem/endItemいずれかが更新されている場合に"更新された”とする
         return $this->getBindedItem()->getModifiedAt() > $this->miroItem->createdAt;
     }
 }
