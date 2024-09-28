@@ -27,7 +27,7 @@ class AiAssistant
 
     private function __filterResult(string $comment): ?string
     {
-        return $comment === self::BLANK_RESPONSE ? null : $comment;
+        return str_contains($comment, self::BLANK_RESPONSE) ? null : $comment;
     }
 
     public function getCommentForRootSticker(string $stickerText): ?string
