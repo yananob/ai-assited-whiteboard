@@ -246,6 +246,7 @@ class MiroBoard
         $data = $this->__putComment($sticker, $comment, $sticker->getPosition()["x"] + 110, $sticker->getPosition()["y"] - 100);
         $miroComment = new MiroComment($data);
         $miroComment->setSticker($sticker);
+        $this->aiComments[] = $miroComment;
     }
 
     public function putCommentToConnector(MiroConnector $connector, string $comment): void
@@ -263,6 +264,11 @@ class MiroBoard
         );
         $miroComment = new MiroComment($data);
         $miroComment->setConnector($connector);
+    }
+
+    public function deleteBindedComment(MiroSticker $sticker): void
+    {
+        $this->__deleteShape($sticker->getBindedComment($this->aiComments)->getMiroId());
     }
 
     private function __deleteShape(string $shapeId): void
