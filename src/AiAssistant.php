@@ -36,8 +36,12 @@ class AiAssistant
         return $this->__filterResult($this->__callChatApi($this->premiseText,  $message));
     }
 
-    public function getCommentForConnector(string $sticker1Text, string $relationText, string $sticker2Text): ?string
+    public function getCommentForConnector(?string $sticker1Text, string $relationText, ?string $sticker2Text): ?string
     {
+        if (empty($sticker1Text) || empty($relationText) || empty($sticker2Text)) {
+            return null;
+        }
+
         $message = $this->directionForChildStickers;
         $message = str_replace('{TEXT1}', $sticker1Text, $message);
         $message = str_replace('{RELATION}', $relationText, $message);

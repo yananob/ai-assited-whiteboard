@@ -13,7 +13,7 @@ class MiroConnector
 
     public function __construct(private $miroItem)
     {
-        $this->text = $miroItem->captions[0]->content;
+        $this->text = property_exists($miroItem, 'captions') ? $miroItem->captions[0]->content : '';
     }
 
     public function getMiroId(): string
@@ -36,14 +36,14 @@ class MiroConnector
         return $this->miroItem->modifiedAt;
     }
 
-    public function getStartItemId(): string
+    public function getStartItemId(): ?string
     {
-        return $this->miroItem->startItem->id;
+        return property_exists($this->miroItem, 'startItem') ? $this->miroItem->startItem->id : null;
     }
 
-    public function getEndItemId(): string
+    public function getEndItemId(): ?string
     {
-        return $this->miroItem->endItem->id;
+        return property_exists($this->miroItem, 'endItem') ? $this->miroItem->endItem->id : null;
     }
 
     public function hasAiComment(array $aiComments): bool

@@ -216,8 +216,11 @@ class MiroBoard
         return ($a->getModifiedAt() > $b->getModifiedAt()) ? -1 : 1;      // MEMO: 更新日時の降順
     }
 
-    public function getStickerText(string $id): string
+    public function getStickerText(?string $id): ?string
     {
+        if (empty($id) || !in_array($id, $this->stickers)) {
+            return null;
+        }
         return strip_tags($this->stickers[$id]->getText());
     }
 
@@ -228,7 +231,7 @@ class MiroBoard
             case $strlen < 50;
                 [$height, $width] = [50, 150];
                 break;
-            case $strlen < 100;
+            case $strlen < 80;
                 [$height, $width] = [100, 200];
                 break;
             default;
@@ -282,7 +285,15 @@ class MiroBoard
     {
         $comment = MiroComment::getBindedCommentToConnector($comment, $connector->getMiroId());
         // $startItem = $this->stickers[$connector->getStartItemId()];
-        $endItem = $this->stickers[$connector->getEndItemId()];
+        $endItemId = $connector->getEndItemId();
+        if (empty($endItemId) || !in_array($endItemId, $this->stickers)) {
+            return;
+        }
+        $endItem = $this->stickers[$endItemId];
+        if (empty($endItem)) {
+            return;
+        }
+
         $data = $this->__putComment(
             $comment,
             // ($startItem->getPosition()["x"] + $endItem->getPosition()["x"]) / 2 + 100,

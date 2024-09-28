@@ -9,6 +9,7 @@ use MyApp\AiAssistant;
 use MyApp\MiroBoard;
 
 const MAX_ITEMS_FOR_COMMENT = 10;
+const MAX_LOOP = 10;
 
 function main()
 {
@@ -20,7 +21,7 @@ function main()
 
     $miroBoard = new MiroBoard($config->miro->token, $config->miro->board_id);
 
-    $max_loop = 5;
+    $max_loop = MAX_LOOP;
     while ($max_loop-- > 0) {
         $miroBoard->refresh();
         if (!$miroBoard->useAiAssist()) {
@@ -41,8 +42,8 @@ function main()
         foreach ($miroBoard->getRecentRootStickers(MAX_ITEMS_FOR_COMMENT) as $sticker) {
             $logger->info("Processing miroItem: {$sticker->getText()}");
 
-            if ($sticker->hasAiComment($miroBoard->getAiComments())) {
-                $logger->info("MiroComment exists, skipping", 1);
+            if (empty($sticker->getText()) || $sticker->hasAiComment($miroBoard->getAiComments())) {
+                $logger->info("Text is blank or MiroComment exists, skipping", 1);
                 continue;
             }
 
@@ -59,8 +60,13 @@ function main()
         foreach ($miroBoard->getRecentConnectors(MAX_ITEMS_FOR_COMMENT) as $miroConnector) {
             $logger->info("Processing miroConnector: {$miroConnector->getText()}");
 
-            if ($miroConnector->hasAiComment($miroBoard->getAiComments())) {
-                $logger->info("MiroComment exists, skipping", 1);
+            if (
+                empty($miroBoard->getStickerText($miroConnector->getStartItemId())) ||
+                empty($miroConnector->getText()) ||
+                empty($miroBoard->getStickerText($miroConnector->getEndItemId())) ||
+                $miroConnector->hasAiComment($miroBoard->getAiComments())
+            ) {
+                $logger->info("Texts are blank or MiroComment exists, skipping", 1);
                 continue;
             }
 
