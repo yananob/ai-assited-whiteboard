@@ -28,12 +28,6 @@ class MiroSticker
                 $this->parentIds[] = $connector->getStartItemId();
             }
         }
-        // var_dump(str_repeat("-", 80));
-        // var_dump($this->getText());
-        // var_dump(("parentIds:"));
-        // var_dump($this->parentIds);
-        // var_dump(("childIds:"));
-        // var_dump($this->childIds);
     }
 
     public function getMiroId(): string
@@ -73,11 +67,16 @@ class MiroSticker
 
     public function hasAiComment(array $aiComments): bool
     {
+        return is_null($this->getBindedComment($aiComments)) ? false : true;
+    }
+
+    public function getBindedComment(array $aiComments): ?MiroComment
+    {
         foreach ($aiComments as $miroComment) {
             if ($this->getMiroId() === $miroComment->getBindedItem()->getMiroId()) {
-                return true;
+                return $miroComment;
             }
         }
-        return false;
+        return null;
     }
 }

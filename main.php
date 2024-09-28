@@ -8,6 +8,8 @@ use MyApp\Logger;
 use MyApp\AiAssistant;
 use MyApp\MiroBoard;
 
+const MAX_ITEMS_FOR_COMMENT = 10;
+
 function main()
 {
     $logger = new Logger();
@@ -36,7 +38,7 @@ function main()
 
         $miroBoard->clearAiCommentsForModifiedItems();
 
-        foreach ($miroBoard->getRecentRootStickers(5) as $sticker) {
+        foreach ($miroBoard->getRecentRootStickers(MAX_ITEMS_FOR_COMMENT) as $sticker) {
             $logger->info("Processing miroItem: {$sticker->getText()}");
 
             if ($sticker->hasAiComment($miroBoard->getAiComments())) {
@@ -44,16 +46,17 @@ function main()
                 continue;
             }
 
-            // $comment = getCommentForSticker($assistant, $sticker->getText());
+            $miroBoard->putThinkingCommentToSticker($sticker);
             $comment = $assistant->getCommentForRootSticker($sticker->getText());
-            $logger->info("Comment from gpt: {$comment}", 1);
+            $logger->info("Comment for stickers from GPT: {$comment}", 1);
+            $miroBoard->deleteBindedComment($sticker);
             if (empty($comment)) {
                 continue;
             }
             $miroBoard->putCommentToSticker($sticker, $comment);
         }
 
-        foreach ($miroBoard->getRecentConnectors(5) as $miroConnector) {
+        foreach ($miroBoard->getRecentConnectors(MAX_ITEMS_FOR_COMMENT) as $miroConnector) {
             $logger->info("Processing miroConnector: {$miroConnector->getText()}");
 
             if ($miroConnector->hasAiComment($miroBoard->getAiComments())) {
@@ -61,13 +64,14 @@ function main()
                 continue;
             }
 
-            // $comment = getCommentForConnector($miroBoard, $assistant, $miroConnector);
+            $miroBoard->putThinkingCommentToConnector($miroConnector);
             $comment = $assistant->getCommentForConnector(
                 $miroBoard->getStickerText($miroConnector->getStartItemId()),
                 $miroConnector->getText(),
                 $miroBoard->getStickerText($miroConnector->getEndItemId())
             );
-            $logger->info("Comment from gpt: {$comment}", 1);
+            $logger->info("Comment for connectors from GPT: {$comment}", 1);
+            $miroBoard->deleteBindedComment($miroConnector);
             if (empty($comment)) {
                 continue;
             }

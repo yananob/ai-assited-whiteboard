@@ -51,7 +51,7 @@ class MiroComment
 
     private static function __getBindedCommentWithMiroId(string $shapeText, string $miroId, $bindedType): string
     {
-        return $shapeText . "\n[" . $bindedType . "," . $miroId . "]";
+        return $shapeText . str_repeat("\n", 5) . "[" . $bindedType . "," . $miroId . "]";
     }
 
     public function setSticker(MiroSticker $sticker): void
