@@ -77,14 +77,11 @@ class MiroComment
 
     public function isBindedItemModified(MiroBoard $miroBoard): bool
     {
-        // TODO: connectorに繋がれている場合は、矢印/startItem/endItemいずれかが更新されている場合に"更新された”とする
-        var_dump($this->getBindedItem()->getModifiedAt());
-        var_dump($this->miroItem->createdAt);
-
         $binded = $this->getBindedItem();
         if (gettype($binded) === 'MiroSticker') {
             $bindedTimestamp = $this->getBindedItem()->getModifiedAt();
         } else {
+            // connectorに繋がれている場合は、矢印/startItem/endItemいずれかが更新されている場合に"更新された”とする
             $bindedTimestamp = max(
                 $this->getBindedItem()->getModifiedAt(),
                 $miroBoard->getStickerModifiedAt($binded->getStartItemId()),
