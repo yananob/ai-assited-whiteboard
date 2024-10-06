@@ -9,7 +9,7 @@ use MyApp\AiAssistant;
 use MyApp\MiroBoard;
 
 const MAX_ITEMS_FOR_COMMENT = 10;
-const MAX_LOOP = 10;
+const MAX_LOOP = 999;
 
 function main()
 {
@@ -39,23 +39,23 @@ function main()
 
         $miroBoard->clearAiCommentsForModifiedItems();
 
-        foreach ($miroBoard->getRecentRootStickers(MAX_ITEMS_FOR_COMMENT) as $sticker) {
-            $logger->info("Processing miroItem: {$sticker->getText()}");
+        // foreach ($miroBoard->getRecentRootStickers(MAX_ITEMS_FOR_COMMENT) as $sticker) {
+        //     $logger->info("Processing miroItem: {$sticker->getText()}");
 
-            if (empty($sticker->getText()) || $sticker->hasAiComment($miroBoard->getAiComments())) {
-                $logger->info("Text is blank or MiroComment exists, skipping", 1);
-                continue;
-            }
+        //     if (empty($sticker->getText()) || $sticker->hasAiComment($miroBoard->getAiComments())) {
+        //         $logger->info("Text is blank or MiroComment exists, skipping", 1);
+        //         continue;
+        //     }
 
-            $miroBoard->putThinkingCommentToSticker($sticker);
-            $comment = $assistant->getCommentForRootSticker($sticker->getText());
-            $logger->info("Comment for stickers from GPT: {$comment}", 1);
-            $miroBoard->deleteBindedComment($sticker);
-            if (empty($comment)) {
-                continue;
-            }
-            $miroBoard->putCommentToSticker($sticker, $comment);
-        }
+        //     $miroBoard->putThinkingCommentToSticker($sticker);
+        //     $comment = $assistant->getCommentForRootSticker($sticker->getText());
+        //     $logger->info("Comment for stickers from GPT: {$comment}", 1);
+        //     $miroBoard->deleteBindedComment($sticker);
+        //     if (empty($comment)) {
+        //         continue;
+        //     }
+        //     $miroBoard->putCommentToSticker($sticker, $comment);
+        // }
 
         foreach ($miroBoard->getRecentConnectors(MAX_ITEMS_FOR_COMMENT) as $miroConnector) {
             $logger->info("Processing miroConnector: {$miroConnector->getText()}");
