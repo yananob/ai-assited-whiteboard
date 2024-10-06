@@ -23,6 +23,7 @@ function main()
 
     $max_loop = MAX_LOOP;
     while ($max_loop-- > 0) {
+        $logger->info(str_repeat('-', 120));
         $miroBoard->refresh();
         if (!$miroBoard->useAiAssist()) {
             $logger->info("not using AiAssist, exiting");
