@@ -161,7 +161,7 @@ class MiroBoard
 
         $result = [];
         foreach (json_decode((string)$response->getBody(), false)->data as $data) {
-            if (isset($data->data->shape) && !in_array($data->data->shape, [self::SHAPE_AICOMMENT])) {
+            if (isset($data->data->shape) && !in_array($data->data->shape, [self::SHAPE_AICOMMENT], true)) {
                 continue;
             }
             $miroComment = new MiroComment($data);
@@ -218,7 +218,7 @@ class MiroBoard
 
     public function getStickerText(?string $id): ?string
     {
-        if (empty($id) || !in_array($id, $this->stickers)) {
+        if (empty($id) || !array_key_exists($id, $this->stickers)) {
             return null;
         }
         return strip_tags($this->stickers[$id]->getText());
@@ -286,7 +286,7 @@ class MiroBoard
         $comment = MiroComment::getBindedCommentToConnector($comment, $connector->getMiroId());
         // $startItem = $this->stickers[$connector->getStartItemId()];
         $endItemId = $connector->getEndItemId();
-        if (empty($endItemId) || !in_array($endItemId, $this->stickers)) {
+        if (empty($endItemId) || !array_key_exists($endItemId, $this->stickers)) {
             return;
         }
         $endItem = $this->stickers[$endItemId];
