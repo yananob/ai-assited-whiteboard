@@ -161,7 +161,7 @@ class MiroBoard
 
         $result = [];
         foreach (json_decode((string)$response->getBody(), false)->data as $data) {
-            if (isset($data->data->shape) && !in_array($data->data->shape, [self::SHAPE_AICOMMENT])) {
+            if (isset($data->data->shape) && !in_array($data->data->shape, [self::SHAPE_AICOMMENT], true)) {
                 continue;
             }
             $miroComment = new MiroComment($data);
@@ -218,26 +218,35 @@ class MiroBoard
 
     public function getStickerText(?string $id): ?string
     {
-        if (empty($id) || !in_array($id, $this->stickers)) {
+        if (empty($id) || !array_key_exists($id, $this->stickers)) {
             return null;
         }
         return strip_tags($this->stickers[$id]->getText());
     }
 
+    public function getStickerModifiedAt(?string $id): ?string
+    {
+        if (empty($id) || !array_key_exists($id, $this->stickers)) {
+            return null;
+        }
+        return $this->stickers[$id]->getModifiedAt();
+    }
+
     private function __putComment(string $comment, float $x, float $y): object
     {
         $strlen = mb_strlen($comment);
-        switch (true) {
-            case $strlen < 50;
-                [$height, $width] = [50, 150];
-                break;
-            case $strlen < 80;
-                [$height, $width] = [100, 200];
-                break;
-            default;
-                [$height, $width] = [150, 250];
-                break;
-        }
+        // switch (true) {
+        //     case $strlen < 50;
+        //         [$height, $width] = [50, 150];
+        //         break;
+        //     case $strlen < 80;
+        //         [$height, $width] = [120, 220];
+        //         break;
+        //     default;
+        //         [$height, $width] = [150, 220];
+        //         break;
+        // }
+        [$height, $width] = [$strlen * 1.4, 220];
             
         $body = [
             'data' => [
@@ -286,7 +295,7 @@ class MiroBoard
         $comment = MiroComment::getBindedCommentToConnector($comment, $connector->getMiroId());
         // $startItem = $this->stickers[$connector->getStartItemId()];
         $endItemId = $connector->getEndItemId();
-        if (empty($endItemId) || !in_array($endItemId, $this->stickers)) {
+        if (empty($endItemId) || !array_key_exists($endItemId, $this->stickers)) {
             return;
         }
         $endItem = $this->stickers[$endItemId];
@@ -327,7 +336,7 @@ class MiroBoard
     {
         foreach ($this->aiComments as $miroComment) {
             $this->logger->debug('checking modified for ' . $miroComment->getText());
-            if ($miroComment->isBindedItemModified()) {
+            if ($miroComment->isBindedItemModified($this)) {
                 $this->logger->debug('deleting old comment: ' . $miroComment->getMiroId());
                 $this->__deleteShape($miroComment->getMiroId());
                 unset($this->aiComments[$miroComment->getMiroId()]);

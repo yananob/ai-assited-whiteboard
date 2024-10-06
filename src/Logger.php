@@ -19,7 +19,7 @@ class Logger
 
         if (is_null($message)) {
             $message = "";
-        } else if (in_array(gettype($message), ["array", "object"])) {
+        } else if (in_array(gettype($message), ["array", "object"], true)) {
             $message = json_encode($message);
         }
         echo str_repeat(" ", $indent * 2) . $message . "\n";
